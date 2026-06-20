@@ -27,7 +27,8 @@ app.get('/', (req, res) => {
       appointments: '/api/appointments',
       admin: '/api/admin',
       patients: '/api/patients',
-      docs: '/api/docs'
+      docs: '/api/docs',
+      workbench: '/api/admin/workbench/page'
     }
   });
 });
@@ -69,7 +70,12 @@ app.listen(PORT, () => {
   console.log('  ✓ 超时未确认前台推送');
   console.log('  ✓ 智能拨打优先级排序');
   console.log('  ✓ 爽约患者温和召回');
+  console.log('  ✓ 前台工作台（未确认/改约/召回三栏）');
+  console.log('  ✓ 联系结果标记');
+  console.log('  ✓ 爽约召回 → 重新预约申请闭环');
+  console.log('  ✓ 批量导入预约');
   console.log('-'.repeat(60));
+  console.log(`\n  前台工作台: http://localhost:${PORT}/api/admin/workbench/page`);
   
   schedulerService.start();
   

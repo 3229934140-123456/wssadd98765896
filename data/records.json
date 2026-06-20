@@ -1,53 +1,165 @@
 [
   {
-    "id": "7990f39c-e0f6-4427-a44a-027170cd1836",
-    "type": "appointment_confirmed",
-    "appointmentId": "c9a14269-8e18-49f3-8a19-c2e7130dde67",
-    "content": "预约已确认：赵六",
+    "id": "71bf7992-d5c5-4a18-a88a-1e5691d07fe0",
+    "type": "appointment_rescheduled",
+    "appointmentId": "9064f140-86e4-4da8-a738-4c44b48d2321",
+    "content": "改约：赵六 - 从2026-06-21 14:02:15改到2026-06-23 14:02:15",
     "details": {
-      "id": "c9a14269-8e18-49f3-8a19-c2e7130dde67",
+      "id": "9064f140-86e4-4da8-a738-4c44b48d2321",
       "patientName": "赵六",
       "phone": "13800138005",
       "openid": "oABCD1234567890_sample5",
       "treatmentItem": "root_canal",
-      "appointmentTime": "2026-06-21 13:50:21",
+      "appointmentTime": "2026-06-23 14:02:15",
       "doctor": "李医生",
-      "status": "confirmed",
+      "status": "pending",
       "reminderSent": false,
-      "confirmedAt": "2026-06-20T17:51:17.923Z",
-      "rescheduledFrom": null,
-      "rescheduledCount": 0,
+      "reminderSentAt": null,
+      "confirmedAt": null,
+      "rescheduledFrom": "2026-06-21 14:02:15",
+      "rescheduledCount": 1,
+      "rescheduleReason": "临时有事改约",
+      "rescheduleType": "patient",
       "noShowRecallSent": false,
-      "createdAt": "2026-06-20T17:50:21.532Z",
-      "updatedAt": "2026-06-20T17:51:17.923Z",
+      "contactResult": null,
+      "createdAt": "2026-06-20T18:02:15.464Z",
+      "updatedAt": "2026-06-20T18:03:11.720Z",
       "notes": "根管治疗复诊"
     },
-    "createdAt": "2026-06-20T17:51:18.093Z"
+    "createdAt": "2026-06-20T18:03:11.838Z"
   },
   {
-    "id": "981eb16e-3b89-4b9b-a2b7-0a87ba547125",
-    "type": "appointment_rescheduled",
-    "appointmentId": "7cebc394-108b-477a-bb23-ac856205ed04",
-    "content": "改约：张三 - 从2026-06-21 21:50:21改到2026-06-23 21:50:21",
+    "id": "f72ff48c-77e3-4c73-99a8-367196b0b1fa",
+    "type": "contact_result_added",
+    "appointmentId": "1685dae7-66df-48ea-b297-fb6bb0505b25",
+    "content": "联系结果：张三 - reached_confirmed",
     "details": {
-      "id": "7cebc394-108b-477a-bb23-ac856205ed04",
+      "id": "6f6a99d4-0c3e-4127-856c-37feeee4824d",
+      "appointmentId": "1685dae7-66df-48ea-b297-fb6bb0505b25",
+      "result": "reached_confirmed",
+      "operator": "前台小李",
+      "note": "患者电话确认可按时就诊",
+      "createdAt": "2026-06-20T18:03:11.842Z"
+    },
+    "createdAt": "2026-06-20T18:03:11.845Z"
+  },
+  {
+    "id": "ef7d19b1-b694-4638-80dc-49ada43f6e34",
+    "type": "appointment_noshow",
+    "appointmentId": "4f061146-8b48-4ca3-8f62-2d307d667a36",
+    "content": "记录爽约：小明",
+    "details": {
+      "id": "4f061146-8b48-4ca3-8f62-2d307d667a36",
+      "patientName": "小明",
+      "phone": "13800138002",
+      "openid": "oABCD1234567890_sample2",
+      "treatmentItem": "fluoride",
+      "appointmentTime": "2026-06-22 08:02:15",
+      "doctor": "王医生",
+      "status": "no_show",
+      "reminderSent": false,
+      "reminderSentAt": null,
+      "confirmedAt": null,
+      "rescheduledFrom": null,
+      "rescheduledCount": 0,
+      "rescheduleReason": null,
+      "rescheduleType": null,
+      "noShowRecallSent": false,
+      "contactResult": null,
+      "createdAt": "2026-06-20T18:02:15.461Z",
+      "updatedAt": "2026-06-20T18:03:11.851Z",
+      "notes": "儿童涂氟"
+    },
+    "createdAt": "2026-06-20T18:03:11.852Z"
+  },
+  {
+    "id": "92f76733-8a69-4278-bc54-31fc9d03d107",
+    "type": "reappointment_request_created",
+    "appointmentId": "4f061146-8b48-4ca3-8f62-2d307d667a36",
+    "content": "爽约召回重新预约申请：小明 - 2026-06-24 02:03:11",
+    "details": {
+      "id": "709a5ad3-ec3c-4c76-8729-0248c48eb8dc",
+      "sourceAppointmentId": "4f061146-8b48-4ca3-8f62-2d307d667a36",
+      "patientName": "小明",
+      "phone": "13800138002",
+      "openid": "oABCD1234567890_sample2",
+      "treatmentItem": "fluoride",
+      "doctor": "王医生",
+      "proposedTime": "2026-06-24 02:03:11",
+      "remark": "可来时段：周三下午、周四上午",
+      "status": "pending",
+      "processedBy": null,
+      "processedAt": null,
+      "newAppointmentId": null,
+      "createdAt": "2026-06-20T18:03:11.855Z"
+    },
+    "createdAt": "2026-06-20T18:03:11.856Z"
+  },
+  {
+    "id": "82083ab0-9952-4448-8cf3-2d2c42ac6e3f",
+    "type": "reappointment_approved",
+    "appointmentId": "e299d1ed-47bd-40eb-adc0-6354cf076076",
+    "content": "批准重新预约：小明",
+    "details": {
+      "requestId": "709a5ad3-ec3c-4c76-8729-0248c48eb8dc",
+      "newAppointmentId": "e299d1ed-47bd-40eb-adc0-6354cf076076"
+    },
+    "createdAt": "2026-06-20T18:03:11.860Z"
+  },
+  {
+    "id": "e2263341-f5df-4fb9-bb1e-679ad3b80870",
+    "type": "contact_result_added",
+    "appointmentId": "8fd4d636-ccad-42ce-8fdb-f4907274561e",
+    "content": "联系结果：李四 - no_answer",
+    "details": {
+      "id": "3f8c1c45-47ca-463a-9824-1bb1c6031038",
+      "appointmentId": "8fd4d636-ccad-42ce-8fdb-f4907274561e",
+      "result": "no_answer",
+      "operator": "前台",
+      "note": "第一次拨打无人接听",
+      "createdAt": "2026-06-20T18:03:11.865Z"
+    },
+    "createdAt": "2026-06-20T18:03:11.866Z"
+  },
+  {
+    "id": "203315c1-f20f-46c1-b31c-5de9d5991d2d",
+    "type": "batch_import",
+    "content": "批量导入：共5条，成功3条，跳过1条，错误1条",
+    "details": {
+      "total": 5,
+      "success": 3,
+      "skipped": 1,
+      "errors": 1
+    },
+    "createdAt": "2026-06-20T18:03:11.871Z"
+  },
+  {
+    "id": "2a21dc32-7c65-4192-b21d-b63156c69ef2",
+    "type": "appointment_confirmed",
+    "appointmentId": "1685dae7-66df-48ea-b297-fb6bb0505b25",
+    "content": "预约已确认：张三",
+    "details": {
+      "id": "1685dae7-66df-48ea-b297-fb6bb0505b25",
       "patientName": "张三",
       "phone": "13800138001",
       "openid": "oABCD1234567890_sample1",
       "treatmentItem": "orthodontics",
-      "appointmentTime": "2026-06-23 21:50:21",
+      "appointmentTime": "2026-06-21 22:02:15",
       "doctor": "李医生",
-      "status": "pending",
+      "status": "confirmed",
       "reminderSent": false,
-      "confirmedAt": null,
-      "rescheduledFrom": "2026-06-21 21:50:21",
-      "rescheduledCount": 1,
+      "reminderSentAt": null,
+      "confirmedAt": "2026-06-20T18:03:11.843Z",
+      "rescheduledFrom": null,
+      "rescheduledCount": 0,
+      "rescheduleReason": null,
+      "rescheduleType": null,
       "noShowRecallSent": false,
-      "createdAt": "2026-06-20T17:50:21.526Z",
-      "updatedAt": "2026-06-20T17:51:50.601Z",
-      "notes": "正畸调整复诊",
-      "rescheduleReason": "临时有事改约"
+      "contactResult": "reached_confirmed",
+      "createdAt": "2026-06-20T18:02:15.459Z",
+      "updatedAt": "2026-06-20T18:03:11.843Z",
+      "notes": "正畸调整复诊"
     },
-    "createdAt": "2026-06-20T17:51:50.715Z"
+    "createdAt": "2026-06-20T18:03:11.874Z"
   }
 ]

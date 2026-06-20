@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const appointmentService = require('../services/appointmentService');
-const frontDeskService = require('../services/frontDeskService');
+const dataStore = require('../models/dataStore');
 
 router.post('/', async (req, res) => {
   try {
@@ -11,6 +11,20 @@ router.post('/', async (req, res) => {
     } else {
       res.status(400).json(result);
     }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/batch-import', async (req, res) => {
+  try {
+    const { appointments } = req.body;
+    if (!appointments || !Array.isArray(appointments)) {
+      return res.status(400).json({ success: false, error: '请提供 appointments 数组' });
+    }
+    
+    const result = appointmentService.batchImport(appointments);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -103,6 +117,42 @@ router.post('/:id/noshow', async (req, res) => {
     const result = appointmentService.markAsNoShow(req.params.id);
     if (result.success) {
       res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/contact-result', async (req, res) => {
+  try {
+    const { result, operator, note } = req.body;
+    if (!result) {
+      return res.status(400).json({ success: false, error: '请提供联系结果' });
+    }
+    
+    const contactResult = appointmentService.addContactResult(req.params.id, result, operator, note);
+    if (contactResult.success) {
+      res.json(contactResult);
+    } else {
+      res.status(400).json(contactResult);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/reappointment', async (req, res) => {
+  try {
+    const { proposedTime, remark } = req.body;
+    if (!proposedTime) {
+      return res.status(400).json({ success: false, error: '请提供期望就诊时间' });
+    }
+    
+    const result = appointmentService.submitReappointmentRequest(req.params.id, proposedTime, remark);
+    if (result.success) {
+      res.status(201).json(result);
     } else {
       res.status(400).json(result);
     }
@@ -304,10 +354,16 @@ function generateRecallPage(appt) {
     .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 8px; }
     .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
     .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; background: #07c160; color: white; margin-top: 20px; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
     .success-msg { text-align: center; padding: 30px 0; }
     .success-icon { font-size: 48px; margin-bottom: 15px; }
     .success-text { font-size: 18px; color: #07c160; font-weight: 500; }
     .hidden { display: none; }
+    .time-slots { margin-top: 10px; }
+    .time-slot { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .time-slot input { flex: 1; }
+    .time-slot .remove-btn { background: #ff4d4f; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+    .add-slot-btn { background: #f0f0f0; color: #666; border: none; border-radius: 8px; padding: 10px; width: 100%; cursor: pointer; font-size: 14px; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -331,40 +387,62 @@ function generateRecallPage(appt) {
   </div>
   
   <div id="formSection" class="card">
-    <div class="form-group">
-      <label>期望就诊时间</label>
-      <input type="datetime-local" id="newTime">
+    <div class="title">填写您方便的时间</div>
+    <div class="time-slots" id="timeSlots">
+      <div class="time-slot">
+        <input type="datetime-local" class="slot-time" placeholder="选择可来时段">
+      </div>
     </div>
+    <button class="add-slot-btn" onclick="addTimeSlot()">+ 添加更多可来时段</button>
+    
     <div class="form-group">
       <label>备注信息（选填）</label>
       <textarea id="remark" rows="3" placeholder="如有特殊需求请在此说明"></textarea>
     </div>
-    <button class="btn" onclick="submitRecall()">提交预约申请</button>
+    <button class="btn" id="submitBtn" onclick="submitRecall()">提交重新预约申请</button>
   </div>
   
   <div id="successSection" class="card success-msg hidden">
     <div class="success-icon">✓</div>
-    <div class="success-text">预约申请已提交</div>
-    <p style="color:#666;margin-top:10px;font-size:14px;">我们会尽快与您联系确认具体时间</p>
+    <div class="success-text">重新预约申请已提交</div>
+    <p style="color:#666;margin-top:10px;font-size:14px;">我们已收到您方便的时间，前台会尽快与您联系确认最终就诊时间</p>
   </div>
 
   <script>
     const apptId = '${appt.id}';
     
+    function addTimeSlot() {
+      const container = document.getElementById('timeSlots');
+      const slot = document.createElement('div');
+      slot.className = 'time-slot';
+      slot.innerHTML = '<input type="datetime-local" class="slot-time"><button class="remove-btn" onclick="this.parentElement.remove()">删除</button>';
+      container.appendChild(slot);
+    }
+    
     async function submitRecall() {
-      const newTime = document.getElementById('newTime').value;
+      const slots = document.querySelectorAll('.slot-time');
+      const times = [];
+      slots.forEach(s => { if (s.value) times.push(s.value); });
+      
       const remark = document.getElementById('remark').value;
       
-      if (!newTime) {
-        alert('请选择期望就诊时间');
+      if (times.length === 0) {
+        alert('请至少填写一个您方便的时间');
         return;
       }
       
+      document.getElementById('submitBtn').disabled = true;
+      
+      const proposedTime = times[0];
+      const remarkWithSlots = remark 
+        ? remark + '（可来时段：' + times.map(t => new Date(t).toLocaleString('zh-CN')).join('、') + '）'
+        : '可来时段：' + times.map(t => new Date(t).toLocaleString('zh-CN')).join('、');
+      
       try {
-        const res = await fetch('/api/appointments/' + apptId + '/reschedule', {
+        const res = await fetch('/api/appointments/' + apptId + '/reappointment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ newTime, reason: '爽约召回重新预约: ' + remark })
+          body: JSON.stringify({ proposedTime, remark: remarkWithSlots })
         });
         const data = await res.json();
         if (data.success) {
@@ -372,9 +450,11 @@ function generateRecallPage(appt) {
           document.getElementById('successSection').classList.remove('hidden');
         } else {
           alert(data.error || '操作失败');
+          document.getElementById('submitBtn').disabled = false;
         }
       } catch (e) {
         alert('网络错误，请稍后重试');
+        document.getElementById('submitBtn').disabled = false;
       }
     }
   </script>
