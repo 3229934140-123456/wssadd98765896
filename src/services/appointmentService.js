@@ -848,7 +848,7 @@ class AppointmentService {
     };
   }
   
-  previewBatchImport(rawRows) {
+  _buildPatientMap() {
     const existing = dataStore.getAllAppointments();
     const patientMap = {};
     existing.forEach(a => {
@@ -857,65 +857,98 @@ class AppointmentService {
         patientMap[key] = a;
       }
     });
-    
+    return patientMap;
+  }
+
+  _validateRowData(row, patientMap = null) {
+    const issues = [];
+    const warnings = [];
+    const map = patientMap || this._buildPatientMap();
+
+    if (!row.patientName) issues.push('缺少姓名');
+    if (!row.phone) issues.push('缺少手机号');
+    else if (!/^1\d{10}$/.test(String(row.phone).replace(/\D/g, ''))) warnings.push('手机号格式可能异常');
+
+    if (!row.treatmentItem) issues.push('缺少复诊项目');
+    if (!row.doctor) issues.push('缺少医生');
+
+    let normalizedTime = null;
+    if (!row.appointmentTime) {
+      issues.push('缺少预约时间');
+    } else {
+      const t = dayjs(row.appointmentTime);
+      if (!t.isValid()) {
+        issues.push('预约时间格式不正确');
+      } else {
+        normalizedTime = t.format('YYYY-MM-DD HH:mm:ss');
+        if (t.isBefore(dayjs())) warnings.push('预约时间已过');
+      }
+    }
+
+    const cleanPhone = row.phone ? String(row.phone).replace(/\D/g, '') : '';
+    if (normalizedTime && cleanPhone && row.treatmentItem && row.doctor) {
+      const key = `${cleanPhone}|${row.treatmentItem}|${normalizedTime}|${row.doctor}`;
+      if (map[key]) {
+        warnings.push('与现有预约重复');
+      }
+      if (normalizedTime && row.doctor) {
+        const conflict = scheduleService.checkConflicts(row.doctor, normalizedTime);
+        if (conflict.hasConflict) warnings.push('医生时间存在排班冲突');
+      }
+    }
+
+    const status = issues.length > 0 ? 'error'
+      : warnings.length > 0 ? 'warning'
+      : 'ok';
+
+    return {
+      data: {
+        patientName: row.patientName || '',
+        phone: cleanPhone,
+        treatmentItem: row.treatmentItem || '',
+        appointmentTime: normalizedTime || row.appointmentTime || '',
+        doctor: row.doctor || '',
+        notes: row.notes || ''
+      },
+      issues,
+      warnings,
+      status
+    };
+  }
+
+  revalidateRow(editedData) {
+    try {
+      const result = this._validateRowData(editedData);
+      return {
+        success: true,
+        issues: result.issues,
+        warnings: result.warnings,
+        status: result.status,
+        data: result.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  previewBatchImport(rawRows) {
+    const patientMap = this._buildPatientMap();
+
     const rows = rawRows.map((row, i) => {
       const rowNum = i + 1;
-      const issues = [];
-      const warnings = [];
-      
-      if (!row.patientName) issues.push('缺少姓名');
-      if (!row.phone) issues.push('缺少手机号');
-      else if (!/^1\d{10}$/.test(String(row.phone).replace(/\D/g, ''))) warnings.push('手机号格式可能异常');
-      
-      if (!row.treatmentItem) issues.push('缺少复诊项目');
-      if (!row.doctor) issues.push('缺少医生');
-      
-      let normalizedTime = null;
-      if (!row.appointmentTime) {
-        issues.push('缺少预约时间');
-      } else {
-        const t = dayjs(row.appointmentTime);
-        if (!t.isValid()) {
-          issues.push('预约时间格式不正确');
-        } else {
-          normalizedTime = t.format('YYYY-MM-DD HH:mm:ss');
-          if (t.isBefore(dayjs())) warnings.push('预约时间已过');
-        }
-      }
-      
-      if (normalizedTime && row.phone && row.treatmentItem && row.doctor) {
-        const key = `${row.phone}|${row.treatmentItem}|${normalizedTime}|${row.doctor}`;
-        if (patientMap[key]) {
-          warnings.push('与现有预约重复');
-        }
-        if (normalizedTime && row.doctor) {
-          const conflict = scheduleService.checkConflicts(row.doctor, normalizedTime);
-          if (conflict.hasConflict) warnings.push('医生时间存在排班冲突');
-        }
-      }
-      
-      const status = issues.length > 0 ? 'error'
-        : warnings.length > 0 ? 'warning'
-        : 'ok';
-      
+      const validated = this._validateRowData(row, patientMap);
+
       return {
         rowKey: uuidv4(),
         rawIndex: i,
         row: rowNum,
-        data: {
-          patientName: row.patientName || '',
-          phone: row.phone ? String(row.phone).replace(/\D/g, '') : '',
-          treatmentItem: row.treatmentItem || '',
-          appointmentTime: normalizedTime || row.appointmentTime || '',
-          doctor: row.doctor || '',
-          notes: row.notes || ''
-        },
-        issues,
-        warnings,
-        status
+        ...validated
       };
     });
-    
+
     const summary = {
       total: rows.length,
       ok: rows.filter(r => r.status === 'ok').length,
@@ -923,9 +956,9 @@ class AppointmentService {
       error: rows.filter(r => r.status === 'error').length,
       canImport: rows.filter(r => r.status !== 'error').length
     };
-    
+
     const preview = dataStore.saveImportPreview({ rows, summary });
-    
+
     return {
       success: true,
       previewId: preview.id,
@@ -937,35 +970,104 @@ class AppointmentService {
   confirmBatchImport(previewId, options = {}) {
     const { skipRows = [], editedRows = {} } = options;
     const skipSet = new Set(skipRows || []);
-    
+
     const preview = dataStore.getImportPreview(previewId);
     if (!preview) {
       return { success: false, error: '预览记录不存在' };
     }
-    
+
     if (preview.status !== 'pending') {
       return { success: false, error: '该预览已处理过' };
     }
-    
-    const validRows = preview.rows
-      .filter(r => r.status !== 'error')
-      .filter(r => !skipSet.has(r.rowKey))
-      .map(r => {
-        const edited = editedRows[r.rowKey];
-        if (edited) {
-          return {
-            ...r.data,
-            ...edited,
-            phone: edited.phone ? String(edited.phone).replace(/\D/g, '') : r.data.phone
-          };
+
+    const skippedRowDetails = [];
+    const importedRowDetails = [];
+    const validRows = [];
+    let editedImportedCount = 0;
+    let editedFailedCount = 0;
+
+    for (const r of preview.rows) {
+      const originalStatus = r.status;
+      const wasEdited = !!(editedRows[r.rowKey] && Object.keys(editedRows[r.rowKey]).length > 0);
+
+      if (skipSet.has(r.rowKey)) {
+        skippedRowDetails.push({
+          patientName: r.data.patientName,
+          phone: r.data.phone,
+          reason: '手动跳过'
+        });
+        continue;
+      }
+
+      let currentData = { ...r.data };
+      let currentStatus = r.status;
+
+      if (wasEdited) {
+        const mergedData = { ...r.data, ...editedRows[r.rowKey] };
+        const revalidateResult = this.revalidateRow(mergedData);
+        if (revalidateResult.success) {
+          currentData = revalidateResult.data;
+          currentStatus = revalidateResult.status;
         }
-        return r.data;
+      }
+
+      if (currentStatus === 'error') {
+        if (wasEdited) {
+          editedFailedCount++;
+        }
+        skippedRowDetails.push({
+          patientName: currentData.patientName,
+          phone: currentData.phone,
+          reason: wasEdited ? '编辑后仍有错误' : '原始数据有错误'
+        });
+        continue;
+      }
+
+      validRows.push(currentData);
+      importedRowDetails.push({
+        patientName: currentData.patientName,
+        phone: currentData.phone,
+        wasEdited: wasEdited,
+        originalStatus: originalStatus
       });
-    
-    const manuallySkippedCount = preview.rows.filter(r => skipSet.has(r.rowKey)).length;
-    
+      if (wasEdited) {
+        editedImportedCount++;
+      }
+    }
+
+    const manuallySkipped = preview.rows.filter(r => skipSet.has(r.rowKey)).length;
+
     const results = dataStore.batchCreateAppointments(validRows);
-    
+
+    const rowKeyToData = new Map();
+    validRows.forEach((data, idx) => {
+      rowKeyToData.set(idx, data);
+    });
+
+    results.forEach((r, idx) => {
+      if (r.status === 'skipped') {
+        const data = rowKeyToData.get(idx);
+        if (data) {
+          const detailIdx = importedRowDetails.findIndex(d => d.patientName === data.patientName && d.phone === data.phone);
+          if (detailIdx !== -1) {
+            const removed = importedRowDetails.splice(detailIdx, 1)[0];
+            if (removed.wasEdited) {
+              editedImportedCount--;
+            }
+          }
+          skippedRowDetails.push({
+            patientName: data.patientName,
+            phone: data.phone,
+            reason: '重复冲突'
+          });
+        }
+      }
+    });
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    const duplicateSkippedCount = results.filter(r => r.status === 'skipped').length;
+    const totalSkipped = skippedRowDetails.length;
+
     dataStore.updateImportPreview(previewId, {
       status: 'confirmed',
       confirmedAt: new Date().toISOString(),
@@ -973,25 +1075,25 @@ class AppointmentService {
       skipRows: skipRows,
       editedRows: editedRows
     });
-    
-    const successCount = results.filter(r => r.status === 'success').length;
-    const duplicateSkippedCount = results.filter(r => r.status === 'skipped').length;
-    const totalSkipped = manuallySkippedCount + duplicateSkippedCount;
-    
+
     dataStore.addRecord({
       type: 'batch_import',
       content: `批量导入：共${preview.summary.total}条（预览），成功${successCount}条，跳过${totalSkipped}条`,
-      details: { previewId, success: successCount, skipped: totalSkipped, manuallySkipped: manuallySkippedCount, duplicateSkipped: duplicateSkippedCount }
+      details: { previewId, success: successCount, skipped: totalSkipped, manuallySkipped: manuallySkipped, duplicateSkipped: duplicateSkippedCount, editedImported: editedImportedCount, editedFailed: editedFailedCount }
     });
-    
+
     return {
       success: true,
       summary: {
         previewedTotal: preview.summary.total,
         imported: successCount,
         skipped: totalSkipped,
-        manuallySkipped: manuallySkippedCount,
-        duplicateSkipped: duplicateSkippedCount
+        manuallySkipped: manuallySkipped,
+        duplicateSkipped: duplicateSkippedCount,
+        editedImportedCount: editedImportedCount,
+        editedFailedCount: editedFailedCount,
+        skippedRowDetails: skippedRowDetails,
+        importedRowDetails: importedRowDetails
       },
       results
     };
@@ -1223,6 +1325,105 @@ class AppointmentService {
           selectedTreatmentItem: treatmentItem || ''
         }
       }
+    };
+  }
+  
+  getContactDetailList({ dateRange = 'today', doctor, treatmentItem, resultType = 'all' } = {}) {
+    const appointments = dataStore.getAllAppointments();
+    const contactResults = dataStore.getAllContactResults();
+    
+    let start, end;
+    if (dateRange === 'week') {
+      start = dayjs().startOf('week');
+      end = dayjs().endOf('week');
+    } else {
+      start = dayjs().startOf('day');
+      end = dayjs().endOf('day');
+    }
+    
+    const apptMap = {};
+    appointments.forEach(a => { apptMap[a.id] = a; });
+    
+    let filteredContactResults = contactResults.filter(cr => {
+      const crTime = dayjs(cr.createdAt);
+      if (!crTime.isAfter(start) || !crTime.isBefore(end)) return false;
+      const appt = apptMap[cr.appointmentId];
+      if (!appt) return false;
+      if (doctor && appt.doctor !== doctor) return false;
+      if (treatmentItem && appt.treatmentItem !== treatmentItem) return false;
+      if (resultType && resultType !== 'all' && cr.result !== resultType) return false;
+      return true;
+    });
+    
+    const detailList = filteredContactResults
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(cr => {
+        const appt = apptMap[cr.appointmentId];
+        return {
+          id: cr.id,
+          appointmentId: cr.appointmentId,
+          patientName: appt ? appt.patientName : '',
+          phone: appt ? appt.phone : '',
+          treatmentItem: appt ? appt.treatmentItem : '',
+          treatmentItemName: appt ? getItemName(appt.treatmentItem) : '',
+          doctor: appt ? appt.doctor : '',
+          appointmentTime: appt ? appt.appointmentTime : null,
+          result: cr.result,
+          resultText: this._translateResult(cr.result),
+          operator: cr.operator,
+          note: cr.note,
+          createdAt: cr.createdAt,
+          appointmentStatus: appt ? appt.status : ''
+        };
+      });
+    
+    return {
+      success: true,
+      data: detailList
+    };
+  }
+  
+  exportContactListCSV({ dateRange = 'today', doctor, treatmentItem } = {}) {
+    const detailResult = this.getContactDetailList({ dateRange, doctor, treatmentItem, resultType: 'all' });
+    if (!detailResult.success) {
+      return { success: false, error: detailResult.error };
+    }
+    
+    const list = detailResult.data;
+    
+    const escapeCSV = (val) => {
+      const str = String(val == null ? '' : val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+    
+    const headers = ['日期时间', '患者姓名', '手机号', '项目', '医生', '预约时间', '跟进结果', '操作人', '备注'];
+    const rows = list.map(item => [
+      item.createdAt ? dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss') : '',
+      item.patientName,
+      item.phone,
+      item.treatmentItemName,
+      item.doctor,
+      item.appointmentTime ? dayjs(item.appointmentTime).format('YYYY-MM-DD HH:mm:ss') : '',
+      item.resultText,
+      item.operator,
+      item.note || ''
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(escapeCSV).join(','))
+    ].join('\r\n');
+    
+    const bom = '\uFEFF';
+    const filename = `跟进清单_${dayjs().format('YYYYMMDD')}.csv`;
+    
+    return {
+      success: true,
+      filename,
+      csvContent: bom + csvContent
     };
   }
   

@@ -1,6 +1,7 @@
 const dataStore = require('../models/dataStore');
 const dayjs = require('dayjs');
 const config = require('../config');
+const { getItemName } = require('../config/treatmentItems');
 
 class ScheduleService {
   
@@ -18,7 +19,7 @@ class ScheduleService {
       const aStart = dayjs(a.appointmentTime);
       const aEnd = aStart.add(duration, 'minute');
       
-      const overlaps = !(endTime.isBefore(aStart) || startTime.isAfter(aEnd));
+      const overlaps = endTime.valueOf() > aStart.valueOf() && startTime.valueOf() < aEnd.valueOf();
       
       if (overlaps && a.doctor === doctor) {
         doctorConflicts.push({
@@ -248,7 +249,7 @@ class ScheduleService {
         const apptStart = dayjs(a.appointmentTime);
         const apptEnd = apptStart.add(duration, 'minute');
 
-        return !(apptEnd.isBefore(slotStart) || apptStart.isAfter(slotEnd));
+        return apptEnd.valueOf() > slotStart.valueOf() && apptStart.valueOf() < slotEnd.valueOf();
       });
     };
 
@@ -257,20 +258,74 @@ class ScheduleService {
         const slots = timeSlots.map(slot => {
           const matches = appointmentsInSlot(slot, resourceType, resource);
           const isFree = matches.length === 0;
-          const hasConflict = matches.length > 1;
 
+          let hasConflict = false;
           const conflictReasons = [];
+          const conflictingAppointments = [];
+
+          if (matches.length > 1) {
+            const duration = defaultDuration;
+            for (let i = 0; i < matches.length; i++) {
+              for (let j = i + 1; j < matches.length; j++) {
+                const a = matches[i];
+                const b = matches[j];
+                const aStart = dayjs(a.appointmentTime);
+                const aEnd = aStart.add(duration, 'minute');
+                const bStart = dayjs(b.appointmentTime);
+                const bEnd = bStart.add(duration, 'minute');
+
+                const overlaps = aEnd.valueOf() > bStart.valueOf() && aStart.valueOf() < bEnd.valueOf();
+                if (overlaps) {
+                  hasConflict = true;
+
+                  const overlapStart = aStart.valueOf() > bStart.valueOf() ? aStart : bStart;
+                  const overlapEnd = aEnd.valueOf() < bEnd.valueOf() ? aEnd : bEnd;
+                  const overlapMinutes = Math.round((overlapEnd.valueOf() - overlapStart.valueOf()) / (1000 * 60));
+
+                  if (!conflictingAppointments.find(x => x.id === a.id)) {
+                    conflictingAppointments.push({
+                      id: a.id,
+                      patientName: a.patientName,
+                      treatmentItemName: getItemName(a.treatmentItem),
+                      appointmentTime: a.appointmentTime,
+                      conflictText: `与 ${b.patientName} 的 ${getItemName(b.treatmentItem)} 重叠 ${overlapMinutes} 分钟`
+                    });
+                  }
+                  if (!conflictingAppointments.find(x => x.id === b.id)) {
+                    conflictingAppointments.push({
+                      id: b.id,
+                      patientName: b.patientName,
+                      treatmentItemName: getItemName(b.treatmentItem),
+                      appointmentTime: b.appointmentTime,
+                      conflictText: `与 ${a.patientName} 的 ${getItemName(a.treatmentItem)} 重叠 ${overlapMinutes} 分钟`
+                    });
+                  }
+                }
+              }
+            }
+
+            if (hasConflict) {
+              if (resourceType === 'doctor') {
+                conflictReasons.push(`医生时段冲突：${conflictingAppointments.map(m => m.patientName).join('、')}`);
+              } else if (resourceType === 'chair') {
+                conflictReasons.push(`椅位时段冲突：${conflictingAppointments.map(m => m.patientName).join('、')}`);
+              } else {
+                conflictReasons.push(`资源被 ${conflictingAppointments.length} 个预约同时占用`);
+              }
+            }
+          }
+
+          let suggestedAlternatives = [];
           if (hasConflict) {
-            const doctorSet = new Set(matches.map(m => m.doctor));
-            const chairSet = new Set(matches.map(m => m.chair).filter(Boolean));
-            if (resourceType === 'doctor' && doctorSet.size > 0) {
-              conflictReasons.push(`该时段医生冲突：${matches.map(m => m.patientName).join('、')}`);
-            }
-            if (resourceType === 'chair' && chairSet.size > 0) {
-              conflictReasons.push(`该时段椅位冲突：${matches.map(m => m.patientName).join('、')}`);
-            }
-            if (conflictReasons.length === 0) {
-              conflictReasons.push(`资源被 ${matches.length} 个预约同时占用`);
+            const conflictDoctor = resourceType === 'doctor' ? resource : (matches[0]?.doctor);
+            if (conflictDoctor) {
+              suggestedAlternatives = this.findAlternativeTimes(
+                conflictDoctor,
+                dayjs(slot.slotStart),
+                defaultDuration,
+                null,
+                resourceType === 'chair' ? resource : null
+              );
             }
           }
 
@@ -280,6 +335,8 @@ class ScheduleService {
             isFree,
             hasConflict,
             conflictReasons,
+            conflictingAppointments,
+            suggestedAlternatives,
             appointments: matches.map(m => ({
               id: m.id,
               patientName: m.patientName,

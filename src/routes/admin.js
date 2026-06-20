@@ -143,8 +143,50 @@ router.get('/schedule/page', async (req, res) => {
   try {
     const date = req.query.date || dayjs().format('YYYY-MM-DD');
     const view = req.query.view || 'doctor';
+    const mode = req.query.mode || null;
+    const requestType = req.query.requestType || null;
+    const requestId = req.query.requestId || null;
     const data = scheduleService.getFullDaySchedule(date);
-    const html = generateSchedulePage(data, view, date);
+
+    let approveRequest = null;
+    if (mode === 'approve' && requestType && requestId) {
+      if (requestType === 'reschedule') {
+        const apptResult = appointmentService.getAppointment(requestId);
+        if (apptResult.success) {
+          const appt = apptResult.data;
+          approveRequest = {
+            type: 'reschedule',
+            id: requestId,
+            patientName: appt.patientName,
+            treatmentItem: appt.treatmentItem,
+            treatmentItemName: appt.treatmentItemName,
+            doctor: appt.doctor,
+            chair: appt.chair,
+            currentTime: appt.rescheduledFrom,
+            desiredTime: appt.appointmentTime,
+            phone: appt.phone
+          };
+        }
+      } else if (requestType === 'reappointment') {
+        const reqData = require('../models/dataStore').getReappointmentRequest(requestId);
+        if (reqData && reqData.status === 'pending') {
+          const { getItemName } = require('../config/treatmentItems');
+          approveRequest = {
+            type: 'reappointment',
+            id: requestId,
+            patientName: reqData.patientName,
+            treatmentItem: reqData.treatmentItem,
+            treatmentItemName: getItemName(reqData.treatmentItem),
+            doctor: reqData.doctor,
+            proposedTime: reqData.proposedTime,
+            remark: reqData.remark,
+            phone: reqData.phone
+          };
+        }
+      }
+    }
+
+    const html = generateSchedulePage(data, view, date, { mode, requestType, requestId, approveRequest });
     res.send(html);
   } catch (error) {
     res.status(500).send(error.message);
@@ -194,6 +236,41 @@ router.get('/statistics/page', async (req, res) => {
   }
 });
 
+router.get('/statistics/detail/json', async (req, res) => {
+  try {
+    const { dateRange, doctor, treatmentItem, resultType } = req.query;
+    const result = appointmentService.getContactDetailList({
+      dateRange: dateRange || 'today',
+      doctor: doctor || undefined,
+      treatmentItem: treatmentItem || undefined,
+      resultType: resultType || 'all'
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/statistics/export', async (req, res) => {
+  try {
+    const { dateRange, doctor, treatmentItem } = req.query;
+    const result = appointmentService.exportContactListCSV({
+      dateRange: dateRange || 'today',
+      doctor: doctor || undefined,
+      treatmentItem: treatmentItem || undefined
+    });
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(result.filename)}`);
+    res.send(result.csvContent);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 function generateStatisticsPage(data) {
   const { statistics, todayProcessedList, filters, dateRange, dateRangeText } = data;
   
@@ -211,53 +288,26 @@ function generateStatisticsPage(data) {
     .concat(filters.treatmentItems.map(it => `<option value="${it.key}" ${filters.selectedTreatmentItem === it.key ? 'selected' : ''}>${it.name}</option>`))
     .join('');
   
-  const statCards = [
-    { label: '总待处理', value: statistics.totalPending, color: '#1890ff', icon: '📋' },
-    { label: '已处理数', value: statistics.processedCount, color: '#52c41a', icon: '✅' },
-    { label: '联系上数', value: statistics.reachedCount, color: '#13c2c2', icon: '📞' },
-    { label: '无人接听', value: statistics.noAnswerCount, color: '#fa8c16', icon: '🔕' },
-    { label: '改约成功', value: statistics.rescheduledCount, color: '#722ed1', icon: '🔄' },
-    { label: '已确认数', value: statistics.confirmedCount, color: '#52c41a', icon: '✔️' },
-    { label: '爽约数', value: statistics.noShowCount, color: '#ff4d4f', icon: '❌' }
-  ].map(s => `
-    <div class="stat-card" style="background: linear-gradient(135deg, ${s.color} 0%, ${s.color}cc 100%);">
+  const statCardsConfig = [
+    { label: '总待处理', value: statistics.totalPending, color: '#1890ff', icon: '📋', resultType: 'all' },
+    { label: '已处理数', value: statistics.processedCount, color: '#52c41a', icon: '✅', resultType: 'all' },
+    { label: '联系上数', value: statistics.reachedCount, color: '#13c2c2', icon: '📞', resultType: 'all' },
+    { label: '无人接听', value: statistics.noAnswerCount, color: '#fa8c16', icon: '🔕', resultType: 'no_answer' },
+    { label: '改约成功', value: statistics.rescheduledCount, color: '#722ed1', icon: '🔄', resultType: 'reached_rescheduled' },
+    { label: '已确认数', value: statistics.confirmedCount, color: '#52c41a', icon: '✔️', resultType: 'reached_confirmed' },
+    { label: '爽约数', value: statistics.noShowCount, color: '#ff4d4f', icon: '❌', resultType: 'all' }
+  ];
+  
+  const statCards = statCardsConfig.map((s, idx) => `
+    <div class="stat-card clickable" data-result-type="${s.resultType}" data-card-index="${idx}" style="background: linear-gradient(135deg, ${s.color} 0%, ${s.color}cc 100%);" onclick="toggleCardDetail(${idx}, '${s.resultType}', '${s.label}')">
       <div class="stat-icon">${s.icon}</div>
       <div class="stat-info">
         <div class="stat-value">${s.value}</div>
         <div class="stat-label">${s.label}</div>
       </div>
+      <span class="card-arrow" id="cardArrow-${idx}">▶</span>
     </div>
   `).join('');
-  
-  const processedListHtml = todayProcessedList.length > 0 ? todayProcessedList.map(item => {
-    const statusClass = {
-      'reached_confirmed': 'status-confirmed',
-      'reached_rescheduled': 'status-rescheduled',
-      'reached_cancelled': 'status-cancelled',
-      'no_answer': 'status-noanswer',
-      'busy': 'status-other',
-      'wrong_number': 'status-other',
-      'left_message': 'status-other',
-      'other': 'status-other'
-    }[item.result] || 'status-other';
-    
-    return `
-      <div class="processed-item">
-        <div class="processed-header">
-          <span class="patient-name">${item.patientName}</span>
-          <span class="status-tag ${statusClass}">${item.resultText}</span>
-        </div>
-        <div class="processed-body">
-          <div class="processed-row"><span>项目</span><span>${item.treatmentItemName}</span></div>
-          <div class="processed-row"><span>医生</span><span>${item.doctor}</span></div>
-          <div class="processed-row"><span>预约时间</span><span>${item.appointmentTime ? new Date(item.appointmentTime).toLocaleString('zh-CN') : '-'}</span></div>
-          <div class="processed-row"><span>联系时间</span><span>${new Date(item.createdAt).toLocaleString('zh-CN')}</span></div>
-          <div class="processed-row"><span>操作人</span><span>${item.operator}</span></div>
-          ${item.note ? `<div class="processed-row"><span>备注</span><span>${item.note}</span></div>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('') : '<div class="empty-list">暂无处理记录</div>';
   
   return `<!DOCTYPE html>
 <html>
@@ -270,6 +320,7 @@ function generateStatisticsPage(data) {
     body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', sans-serif; background: #f5f7fa; min-height: 100vh; padding-bottom: 20px; }
     .header { background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%); padding: 16px; color: #fff; box-shadow: 0 2px 8px rgba(24,144,255,0.3); position: sticky; top: 0; z-index: 100; }
     .header h1 { font-size: 18px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .header-actions { display: flex; gap: 8px; }
     .refresh-btn { padding: 6px 14px; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 13px; backdrop-filter: blur(4px); }
     .refresh-btn:hover { background: rgba(255,255,255,0.3); }
     
@@ -279,29 +330,35 @@ function generateStatisticsPage(data) {
     
     .filters { display: flex; gap: 10px; padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee; flex-wrap: wrap; }
     .filter-select { flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: #fff; }
+    .export-btn-bar { padding: 10px 16px; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: flex-end; }
+    .export-csv-btn { padding: 8px 16px; background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; box-shadow: 0 2px 6px rgba(82,196,26,0.3); }
+    .export-csv-btn:active { transform: scale(0.98); }
     
     .content { padding: 12px 16px; }
     
     .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-    .stat-card { border-radius: 12px; padding: 14px; color: #fff; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .stat-card { border-radius: 12px; padding: 14px; color: #fff; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; }
+    .stat-card.clickable { cursor: pointer; transition: transform 0.2s; }
+    .stat-card.clickable:active { transform: scale(0.97); }
+    .stat-card.active { box-shadow: 0 0 0 3px rgba(24,144,255,0.6); }
     .stat-icon { font-size: 28px; }
     .stat-info { flex: 1; }
     .stat-value { font-size: 24px; font-weight: 700; line-height: 1.2; }
     .stat-label { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+    .card-arrow { font-size: 14px; opacity: 0.8; transition: transform 0.3s; }
+    .card-arrow.expanded { transform: rotate(90deg); }
     
-    .list-section { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .list-header { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-    .list-header-title { font-size: 15px; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
-    .list-header-count { background: #e6f7ff; color: #1890ff; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
-    .list-arrow { transition: transform 0.3s; color: #999; font-size: 18px; }
-    .list-arrow.expanded { transform: rotate(180deg); }
+    .detail-section { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; }
+    .detail-header-bar { padding: 14px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+    .detail-header-title { font-size: 15px; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 6px; }
+    .detail-header-count { background: #e6f7ff; color: #1890ff; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
     
-    .list-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-    .list-content.expanded { max-height: 2000px; }
+    .detail-content { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .detail-content.expanded { max-height: 5000px; }
     
-    .processed-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; }
-    .processed-item:last-child { border-bottom: none; }
-    .processed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .detail-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .patient-name { font-size: 15px; font-weight: 600; color: #1a1a1a; }
     .status-tag { padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
     .status-confirmed { background: #f6ffed; color: #52c41a; }
@@ -310,17 +367,23 @@ function generateStatisticsPage(data) {
     .status-noanswer { background: #fff7e6; color: #fa8c16; }
     .status-other { background: #f5f5f5; color: #666; }
     
-    .processed-body { background: #fafafa; border-radius: 8px; padding: 10px 12px; }
-    .processed-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
-    .processed-row span:first-child { color: #999; }
-    .processed-row span:last-child { color: #333; }
+    .detail-body { background: #fafafa; border-radius: 8px; padding: 10px 12px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+    .detail-row span:first-child { color: #999; }
+    .detail-row span:last-child { color: #333; }
     
     .empty-list { padding: 40px 20px; text-align: center; color: #bbb; font-size: 14px; }
+    
+    .loading { padding: 30px; text-align: center; color: #999; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>📊 前台复盘统计 <button class="refresh-btn" onclick="refreshData()">刷新</button></h1>
+    <h1>📊 前台复盘统计
+      <div class="header-actions">
+        <button class="refresh-btn" onclick="refreshData()">刷新</button>
+      </div>
+    </h1>
     <div class="date-tabs">${dateTabs}</div>
   </div>
   
@@ -333,26 +396,32 @@ function generateStatisticsPage(data) {
     </select>
   </div>
   
+  <div class="export-btn-bar">
+    <button class="export-csv-btn" onclick="exportCSV()">📥 导出当日跟进清单</button>
+  </div>
+  
   <div class="content">
     <div class="stat-grid">
       ${statCards}
     </div>
     
-    <div class="list-section">
-      <div class="list-header" onclick="toggleList()">
-        <div class="list-header-title">
-          <span>${dateRangeText}处理列表</span>
-          <span class="list-header-count">${todayProcessedList.length}条</span>
+    <div class="detail-section" id="detailSection" style="display:none;">
+      <div class="detail-header-bar">
+        <div class="detail-header-title">
+          <span id="detailTitle">明细列表</span>
+          <span class="detail-header-count" id="detailCount">0条</span>
         </div>
-        <span class="list-arrow" id="listArrow">▼</span>
       </div>
-      <div class="list-content" id="listContent">
-        ${processedListHtml}
+      <div class="detail-content expanded" id="detailContent">
+        <div class="empty-list">请点击上方卡片查看明细</div>
       </div>
     </div>
   </div>
 
   <script>
+    let currentActiveCard = null;
+    let currentDetailList = ${JSON.stringify(todayProcessedList)};
+    
     function buildUrl(params) {
       const usp = new URLSearchParams();
       Object.keys(params).forEach(k => {
@@ -360,6 +429,15 @@ function generateStatisticsPage(data) {
       });
       const qs = usp.toString();
       return '/api/admin/statistics/page' + (qs ? '?' + qs : '');
+    }
+    
+    function buildApiUrl(endpoint, params) {
+      const usp = new URLSearchParams();
+      Object.keys(params).forEach(k => {
+        if (params[k]) usp.set(k, params[k]);
+      });
+      const qs = usp.toString();
+      return '/api/admin/statistics/' + endpoint + (qs ? '?' + qs : '');
     }
     
     function changeDateRange(range) {
@@ -379,14 +457,111 @@ function generateStatisticsPage(data) {
       location.reload();
     }
     
-    function toggleList() {
-      const content = document.getElementById('listContent');
-      const arrow = document.getElementById('listArrow');
-      content.classList.toggle('expanded');
-      arrow.classList.toggle('expanded');
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
     
-    toggleList();
+    function renderDetailItems(list) {
+      if (!list || list.length === 0) return '<div class="empty-list">暂无记录</div>';
+      return list.map(item => {
+        const statusClassMap = {
+          'reached_confirmed': 'status-confirmed',
+          'reached_rescheduled': 'status-rescheduled',
+          'reached_cancelled': 'status-cancelled',
+          'no_answer': 'status-noanswer',
+          'busy': 'status-other',
+          'wrong_number': 'status-other',
+          'left_message': 'status-other',
+          'other': 'status-other'
+        };
+        const statusClass = statusClassMap[item.result] || 'status-other';
+        const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString('zh-CN') : '-';
+        const appointmentTime = item.appointmentTime ? new Date(item.appointmentTime).toLocaleString('zh-CN') : '-';
+        
+        return '<div class="detail-item">' +
+          '<div class="detail-header">' +
+            '<span class="patient-name">' + escapeHtml(item.patientName) + '</span>' +
+            '<span class="status-tag ' + statusClass + '">' + escapeHtml(item.resultText || '') + '</span>' +
+          '</div>' +
+          '<div class="detail-body">' +
+            '<div class="detail-row"><span>跟进时间</span><span>' + escapeHtml(createdAt) + '</span></div>' +
+            '<div class="detail-row"><span>电话</span><span>' + escapeHtml(item.phone || '-') + '</span></div>' +
+            '<div class="detail-row"><span>项目</span><span>' + escapeHtml(item.treatmentItemName || '-') + '</span></div>' +
+            '<div class="detail-row"><span>医生</span><span>' + escapeHtml(item.doctor || '-') + '</span></div>' +
+            '<div class="detail-row"><span>结果</span><span>' + escapeHtml(item.resultText || '-') + '</span></div>' +
+            '<div class="detail-row"><span>操作人</span><span>' + escapeHtml(item.operator || '-') + '</span></div>' +
+            (item.note ? '<div class="detail-row"><span>备注</span><span>' + escapeHtml(item.note) + '</span></div>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    
+    async function toggleCardDetail(cardIndex, resultType, label) {
+      const cards = document.querySelectorAll('.stat-card');
+      const arrows = document.querySelectorAll('.card-arrow');
+      
+      if (currentActiveCard === cardIndex) {
+        cards[cardIndex].classList.remove('active');
+        arrows[cardIndex].classList.remove('expanded');
+        document.getElementById('detailSection').style.display = 'none';
+        currentActiveCard = null;
+        return;
+      }
+      
+      cards.forEach((c, i) => {
+        c.classList.remove('active');
+        arrows[i].classList.remove('expanded');
+      });
+      
+      cards[cardIndex].classList.add('active');
+      arrows[cardIndex].classList.add('expanded');
+      currentActiveCard = cardIndex;
+      
+      document.getElementById('detailSection').style.display = 'block';
+      document.getElementById('detailTitle').textContent = label + ' - 明细列表';
+      document.getElementById('detailCount').textContent = '加载中...';
+      document.getElementById('detailContent').innerHTML = '<div class="loading">加载中...</div>';
+      
+      try {
+        const dateRange = '${dateRange}';
+        const doctor = document.getElementById('doctorFilter').value;
+        const item = document.getElementById('itemFilter').value;
+        
+        const url = buildApiUrl('detail/json', {
+          dateRange,
+          doctor,
+          treatmentItem: item,
+          resultType
+        });
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+          currentDetailList = data.data;
+          document.getElementById('detailCount').textContent = data.data.length + '条';
+          document.getElementById('detailContent').innerHTML = renderDetailItems(data.data);
+        } else {
+          document.getElementById('detailContent').innerHTML = '<div class="empty-list">加载失败：' + escapeHtml(data.error || '未知错误') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('detailContent').innerHTML = '<div class="empty-list">网络错误</div>';
+      }
+    }
+    
+    function exportCSV() {
+      const dateRange = '${dateRange}';
+      const doctor = document.getElementById('doctorFilter').value;
+      const item = document.getElementById('itemFilter').value;
+      const url = buildApiUrl('export', { dateRange, doctor, treatmentItem: item });
+      window.location.href = url;
+    }
   </script>
 </body>
 </html>`;
@@ -858,7 +1033,9 @@ function generateWorkbenchPage(data) {
 </html>`;
 }
 
-function generateSchedulePage(data, view, date) {
+function generateSchedulePage(data, view, date, options = {}) {
+  const { mode, requestType, requestId, approveRequest } = options;
+  const isApproveMode = mode === 'approve' && approveRequest;
   const weekdayMap = ['周日','周一','周二','周三','周四','周五','周六'];
   const dateObj = dayjs(date);
   const dateDisplay = dateObj.format('YYYY年MM月DD日') + ' ' + weekdayMap[dateObj.day()];
@@ -1070,9 +1247,49 @@ function generateSchedulePage(data, view, date) {
     .conflict-reason { background: #fff1f0; border: 1px solid #ffa39e; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
     .conflict-reason-title { font-size: 13px; font-weight: 600; color: #cf1322; margin-bottom: 6px; }
     .conflict-reason-text { font-size: 12px; color: #a8071a; line-height: 1.5; }
+
+    .approve-bar { background: linear-gradient(135deg, #722ed1 0%, #9254de 100%); padding: 12px 16px; color: #fff; box-shadow: 0 2px 8px rgba(114,46,209,0.3); }
+    .approve-bar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .approve-bar-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .approve-cancel-btn { padding: 5px 12px; border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 12px; }
+    .approve-info { background: rgba(255,255,255,0.15); border-radius: 8px; padding: 10px 12px; }
+    .approve-info-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+    .approve-info-row span:first-child { opacity: 0.85; }
+    .approve-info-row span:last-child { font-weight: 500; }
+
+    .action-buttons { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-primary { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%); color: #fff; box-shadow: 0 2px 6px rgba(82,196,26,0.3); }
+    .btn-secondary { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; background: #f0f0f0; color: #666; }
+
+    .suggest-section { margin-top: 12px; }
+    .suggest-title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+    .suggest-btn-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .suggest-btn { padding: 8px 12px; font-size: 13px; border: 1px solid #1890ff; background: #fff; color: #1890ff; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    .suggest-btn:active { background: #1890ff; color: #fff; }
+
+    .conflict-patient-tag { display: inline-block; padding: 2px 8px; background: #fff1f0; color: #cf1322; border-radius: 10px; font-size: 11px; margin-left: 4px; }
   </style>
 </head>
 <body>
+  ${isApproveMode ? `
+  <div class="approve-bar">
+    <div class="approve-bar-header">
+      <div class="approve-bar-title">📋 ${approveRequest.type === 'reschedule' ? '改约申请审批' : '召回申请审批'}</div>
+      <button class="approve-cancel-btn" onclick="cancelApprove()">取消</button>
+    </div>
+    <div class="approve-info">
+      <div class="approve-info-row"><span>患者姓名</span><span>${approveRequest.patientName}</span></div>
+      <div class="approve-info-row"><span>复诊项目</span><span>${approveRequest.treatmentItemName}</span></div>
+      <div class="approve-info-row"><span>主治医生</span><span>${approveRequest.doctor}</span></div>
+      ${approveRequest.type === 'reschedule' ? `
+      <div class="approve-info-row"><span>原时间</span><span>${approveRequest.currentTime ? new Date(approveRequest.currentTime).toLocaleString('zh-CN') : '-'}</span></div>
+      <div class="approve-info-row"><span>期望新时间</span><span>${new Date(approveRequest.desiredTime).toLocaleString('zh-CN')}</span></div>
+      ` : `
+      <div class="approve-info-row"><span>期望时间</span><span>${new Date(approveRequest.proposedTime).toLocaleString('zh-CN')}</span></div>
+      `}
+    </div>
+  </div>
+  ` : ''}
   <div class="header">
     <h1>📊 排班作战图</h1>
     <div class="date-nav">
@@ -1113,6 +1330,17 @@ function generateSchedulePage(data, view, date) {
   <script>
     const currentDate = '${date}';
     const currentView = '${view}';
+    const isApproveMode = ${isApproveMode ? 'true' : 'false'};
+    const approveMode = ${isApproveMode ? JSON.stringify({ type: approveRequest.type, id: approveRequest.id, doctor: approveRequest.doctor }) : 'null'};
+
+    function buildScheduleUrl(params) {
+      const usp = new URLSearchParams();
+      Object.keys(params).forEach(k => {
+        if (params[k]) usp.set(k, params[k]);
+      });
+      const qs = usp.toString();
+      return '/api/admin/schedule/page' + (qs ? '?' + qs : '');
+    }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -1122,17 +1350,108 @@ function generateSchedulePage(data, view, date) {
     }
 
     function changeDate(newDate) {
-      window.location.href = '/api/admin/schedule/page?date=' + newDate + '&view=' + currentView;
+      const params = { date: newDate, view: currentView };
+      if (isApproveMode) {
+        params.mode = 'approve';
+        params.requestType = approveMode.type;
+        params.requestId = approveMode.id;
+      }
+      window.location.href = buildScheduleUrl(params);
     }
 
     function switchView(view) {
-      window.location.href = '/api/admin/schedule/page?date=' + currentDate + '&view=' + view;
+      const params = { date: currentDate, view: view };
+      if (isApproveMode) {
+        params.mode = 'approve';
+        params.requestType = approveMode.type;
+        params.requestId = approveMode.id;
+      }
+      window.location.href = buildScheduleUrl(params);
+    }
+
+    function cancelApprove() {
+      window.location.href = '/api/admin/workbench/page';
+    }
+
+    function combineDateTime(dateStr, timeStr) {
+      return dateStr + ' ' + timeStr + ':00';
+    }
+
+    function getWeekday(dateStr) {
+      const weekdayMap = ['周日','周一','周二','周三','周四','周五','周六'];
+      const d = new Date(dateStr);
+      return weekdayMap[d.getDay()];
+    }
+
+    async function submitApprove(selectedTime, doctor, chair) {
+      if (!confirm('确认按此时间批准该申请？')) return;
+      showToast('处理中...');
+      try {
+        let url, body;
+        if (approveMode.type === 'reschedule') {
+          url = '/api/appointments/' + approveMode.id + '/reschedule';
+          body = JSON.stringify({ newTime: selectedTime, reason: '排班图审批改约' });
+        } else {
+          url = '/api/admin/reappointment-requests/' + approveMode.id + '/approve';
+          body = JSON.stringify({ operator: '前台', overrideTime: selectedTime });
+        }
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✓ 审批成功');
+          setTimeout(() => {
+            window.location.href = '/api/admin/workbench/page';
+          }, 800);
+        } else {
+          showToast('✗ ' + (data.error || '操作失败'));
+        }
+      } catch (e) {
+        showToast('✗ 网络错误');
+      }
+    }
+
+    function showApproveConfirm(slot, resourceName) {
+      const modalContent = document.getElementById('modalContent');
+      const modalTitle = document.getElementById('modalTitle');
+      modalTitle.textContent = '确认审批时间';
+
+      const selectedTime = combineDateTime(currentDate, slot.time);
+      const weekday = getWeekday(selectedTime);
+      const doctor = approveMode.doctor || (resourceName ? resourceName : '');
+
+      let html = '<div class="modal-time">' + slot.time + ' - ' + addMinutes(slot.time, 30) + ' ' + weekday + '</div>';
+      html += '<span class="modal-status free">🕐 空闲时段</span>';
+      html += '<div class="appt-card" style="margin-top:12px;">';
+      html += '<div class="appt-name">已选时间信息</div>';
+      html += '<div class="appt-row"><span>日期</span><span>' + currentDate + ' ' + weekday + '</span></div>';
+      html += '<div class="appt-row"><span>时间</span><span>' + slot.time + ' - ' + addMinutes(slot.time, 30) + '</span></div>';
+      if (doctor) html += '<div class="appt-row"><span>医生</span><span>' + doctor + '</span></div>';
+      if (slot.chair) html += '<div class="appt-row"><span>椅位</span><span>' + slot.chair + '</span></div>';
+      html += '</div>';
+      html += '<div class="action-buttons">';
+      html += '<button class="btn-secondary" onclick="closeModal()">取消</button>';
+      html += '<button class="btn-primary" onclick="submitApprove(\'' + selectedTime + '\', \'' + doctor + '\', \'\')">按此时间批准</button>';
+      html += '</div>';
+
+      modalContent.innerHTML = html;
+      document.getElementById('modalMask').classList.add('show');
     }
 
     function showSlotDetail(el) {
       const raw = el.getAttribute('data-slot');
       let slot;
       try { slot = JSON.parse(decodeURIComponent(raw)); } catch(e) { return; }
+
+      if (isApproveMode && slot.isFree) {
+        const resourceHeader = el.closest('.resource-row')?.querySelector('.resource-name');
+        const resourceName = resourceHeader ? resourceHeader.textContent.trim() : '';
+        showApproveConfirm(slot, resourceName);
+        return;
+      }
 
       const modalContent = document.getElementById('modalContent');
       const modalTitle = document.getElementById('modalTitle');
@@ -1146,12 +1465,24 @@ function generateSchedulePage(data, view, date) {
       let html = '<div class="modal-time">' + slot.time + ' - ' + addMinutes(slot.time, 30) + '</div>';
       html += '<span class="modal-status ' + statusClass + '">' + statusText + '</span>';
 
-      if (slot.appointments && slot.appointments.length > 0) {
+      if (slot.hasConflict && slot.conflictingAppointments && slot.conflictingAppointments.length > 0) {
+        html += '<div class="conflict-reason">';
+        html += '<div class="conflict-reason-title">⚠️ 冲突患者名单</div>';
+        slot.conflictingAppointments.forEach(ca => {
+          html += '<div class="appt-card conflict" style="margin-top:8px;">';
+          html += '<div class="appt-name">' + ca.patientName + '</div>';
+          html += '<div class="appt-row"><span>项目</span><span>' + ca.treatmentItemName + '</span></div>';
+          html += '<div class="appt-row"><span>时间</span><span>' + new Date(ca.appointmentTime).toLocaleString('zh-CN', {hour:'2-digit', minute:'2-digit'}) + '</span></div>';
+          html += '<div class="appt-row"><span>冲突说明</span><span style="color:#cf1322;">' + ca.conflictText + '</span></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      } else if (slot.appointments && slot.appointments.length > 0) {
         slot.appointments.forEach((appt, i) => {
           const conflictClass = slot.hasConflict ? ' conflict' : '';
           const timeStr = new Date(appt.appointmentTime).toLocaleString('zh-CN', {hour:'2-digit', minute:'2-digit'});
           html += '<div class="appt-card' + conflictClass + '">';
-          html += '<div class="appt-name">' + (slot.hasConflict ? '⚠️ ' : '') + appt.patientName + '</div>';
+          html += '<div class="appt-name">' + appt.patientName + '</div>';
           html += '<div class="appt-row"><span>项目</span><span>' + appt.treatmentItem + '</span></div>';
           html += '<div class="appt-row"><span>预约时间</span><span>' + timeStr + '</span></div>';
           html += '<div class="appt-row"><span>医生</span><span>' + appt.doctor + '</span></div>';
@@ -1162,15 +1493,37 @@ function generateSchedulePage(data, view, date) {
         });
       }
 
-      if (slot.hasConflict && slot.conflictReasons && slot.conflictReasons.length > 0) {
+      if (slot.hasConflict && slot.conflictReasons && slot.conflictReasons.length > 0 && !(slot.conflictingAppointments && slot.conflictingAppointments.length > 0)) {
         html += '<div class="conflict-reason">';
         html += '<div class="conflict-reason-title">⚠️ 冲突原因</div>';
         html += '<div class="conflict-reason-text">' + slot.conflictReasons.join('<br>') + '</div>';
         html += '</div>';
       }
 
+      if (slot.hasConflict && slot.suggestedAlternatives && slot.suggestedAlternatives.length > 0) {
+        html += '<div class="suggest-section">';
+        html += '<div class="suggest-title">💡 推荐替代时间</div>';
+        html += '<div class="suggest-btn-list">';
+        slot.suggestedAlternatives.forEach(alt => {
+          html += '<button class="suggest-btn" onclick="selectAlternative(\'' + alt.time + '\')">';
+          html += alt.timeDisplay + ' ' + alt.weekday;
+          if (alt.chair) html += ' (' + alt.chair + ')';
+          html += '</button>';
+        });
+        html += '</div></div>';
+      }
+
       modalContent.innerHTML = html;
       document.getElementById('modalMask').classList.add('show');
+    }
+
+    function selectAlternative(time) {
+      if (isApproveMode) {
+        submitApprove(time, approveMode ? approveMode.doctor : '', '');
+      } else {
+        showToast('已选择：' + new Date(time).toLocaleString('zh-CN'));
+        closeModal();
+      }
     }
 
     function closeModal(e) {

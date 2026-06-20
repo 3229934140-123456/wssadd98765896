@@ -1,19 +1,19 @@
 [
   {
-    "id": "b841dbfa-f045-4a8f-a548-3e3701f37179",
-    "sourceAppointmentId": "4ee77804-4086-40d4-aa5d-f9d27eb2497e",
-    "patientName": "召回审批测试",
-    "phone": "13944440001",
+    "id": "a3371318-08c5-4f5a-a051-593f5a4fe1f6",
+    "sourceAppointmentId": "040fc524-2af5-4b97-be5e-07a54226ad29",
+    "patientName": "审批模式测试",
+    "phone": "13955550101",
     "openid": null,
-    "treatmentItem": "cleaning",
+    "treatmentItem": "orthodontics",
     "doctor": "张医生",
-    "proposedTime": "2026-06-26 09:00:13",
-    "remark": "希望改到上午",
+    "proposedTime": "2026-06-26 09:00:00",
+    "remark": "希望上午来",
     "status": "approved",
     "processedBy": "前台小美",
-    "processedAt": "2026-06-20T19:23:13.506Z",
-    "newAppointmentId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
-    "createdAt": "2026-06-20T19:23:13.503Z",
-    "finalTime": "2026-06-27 14:00:00"
+    "processedAt": "2026-06-20T19:55:42.186Z",
+    "newAppointmentId": "da4125a0-dea0-42ec-94f9-946a0fa12926",
+    "createdAt": "2026-06-20T19:55:42.183Z",
+    "finalTime": "2026-06-27 15:00:00"
   }
 ]

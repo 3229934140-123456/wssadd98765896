@@ -69,6 +69,19 @@ router.post('/confirm-import/:previewId', async (req, res) => {
   }
 });
 
+router.post('/revalidate-row', async (req, res) => {
+  try {
+    const result = appointmentService.revalidateRow(req.body || {});
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/import-page', async (req, res) => {
   try {
     const html = generateImportPage();
@@ -719,6 +732,18 @@ function generateImportPage() {
     .result-card { padding: 20px; text-align: center; }
     .result-icon { font-size: 48px; margin-bottom: 10px; color: #07c160; }
     .result-text { font-size: 18px; color: #333; }
+    .result-detail { text-align: left; margin-top: 15px; padding: 15px; background: #fafafa; border-radius: 8px; }
+    .result-detail-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 10px; }
+    .result-detail-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .result-detail-item:last-child { border-bottom: none; }
+    .result-detail-name { color: #333; font-weight: 500; }
+    .result-detail-phone { color: #999; margin-left: 8px; }
+    .result-detail-reason { color: #d46b08; margin-top: 2px; }
+    .result-stats { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+    .result-stat { padding: 8px 14px; border-radius: 6px; font-size: 13px; }
+    .result-stat-ok { background: #f6ffed; color: #389e0d; }
+    .result-stat-edit { background: #e6f7ff; color: #096dd9; }
+    .result-stat-skip { background: #fff7e6; color: #d46b08; }
     .cell-input {
       width: 100%;
       padding: 4px 6px;
@@ -802,6 +827,11 @@ function generateImportPage() {
   <div id="resultSection" class="card result-card hidden">
     <div class="result-icon">✓</div>
     <div class="result-text" id="resultText">导入完成</div>
+    <div class="result-stats" id="resultStats"></div>
+    <div id="resultDetail" class="result-detail hidden">
+      <div class="result-detail-title">跳过明细</div>
+      <div id="resultDetailList"></div>
+    </div>
     <button class="btn btn-primary" style="margin-top:20px;" onclick="location.reload()">继续导入</button>
   </div>
 
@@ -900,6 +930,68 @@ function generateImportPage() {
       }
       rowEditMap[rowKey][field] = value;
     }
+
+    async function revalidateRowAndRefresh(rowKey) {
+      const row = previewRows.find(r => r.rowKey === rowKey);
+      if (!row) return;
+
+      const edited = rowEditMap[rowKey] || {};
+      if (Object.keys(edited).length === 0) return;
+
+      const editedData = { ...row.data, ...edited };
+
+      try {
+        const res = await fetch('/api/appointments/revalidate-row', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editedData)
+        });
+        const data = await res.json();
+        if (data.success) {
+          const idx = previewRows.findIndex(r => r.rowKey === rowKey);
+          if (idx !== -1) {
+            previewRows[idx] = {
+              ...previewRows[idx],
+              data: data.data,
+              issues: data.issues,
+              warnings: data.warnings,
+              status: data.status
+            };
+            rowEditMap[rowKey] = { ...data.data };
+            updateRowDisplay(rowKey);
+            updateSummary();
+          }
+        }
+      } catch (e) {
+      }
+    }
+
+    function updateRowDisplay(rowKey) {
+      const row = previewRows.find(r => r.rowKey === rowKey);
+      if (!row) return;
+
+      const tr = document.querySelector('tr[data-row-key="' + rowKey + '"]');
+      if (!tr) return;
+
+      tr.className = 'row-' + row.status;
+      if (rowSkipMap[rowKey]) tr.classList.add('row-skipped');
+
+      const tags = row.issues.map(i => '<span class="badge badge-error">' + i + '</span>')
+        .concat(row.warnings.map(w => '<span class="badge badge-warning">' + w + '</span>')).join('');
+      const statusCell = tr.querySelector('td:last-child');
+      if (statusCell) {
+        statusCell.innerHTML = tags || '<span style="color:#389e0d;">正常</span>';
+      }
+    }
+
+    function updateSummary() {
+      const s = {
+        ok: previewRows.filter(r => r.status === 'ok').length,
+        warning: previewRows.filter(r => r.status === 'warning').length,
+        error: previewRows.filter(r => r.status === 'error').length
+      };
+      renderSummary(s);
+    }
     
     function renderTable(rows) {
       let html = '<thead><tr>' +
@@ -927,11 +1019,11 @@ function generateImportPage() {
         html += '<tr class="' + trClass + '" data-row-key="' + key + '">' +
           '<td class="skip-cell"><input type="checkbox" onchange="toggleSkip(' + sq + key + sq + ', this.checked)"' + (isSkipped ? ' checked' : '') + '></td>' +
           '<td>' + r.row + '</td>' +
-          '<td><input class="cell-input" type="text" value="' + esc(patientName) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'patientName' + sq + ',this.value)"></td>' +
-          '<td><input class="cell-input" type="text" value="' + esc(phone) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'phone' + sq + ',this.value)"></td>' +
-          '<td><input class="cell-input" type="text" value="' + esc(treatmentItem) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'treatmentItem' + sq + ',this.value)"></td>' +
-          '<td><input class="cell-input" type="text" value="' + esc(appointmentTime) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'appointmentTime' + sq + ',this.value)"></td>' +
-          '<td><input class="cell-input" type="text" value="' + esc(doctor) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'doctor' + sq + ',this.value)"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(patientName) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'patientName' + sq + ',this.value)" onblur="revalidateRowAndRefresh(' + sq + key + sq + ')"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(phone) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'phone' + sq + ',this.value)" onblur="revalidateRowAndRefresh(' + sq + key + sq + ')"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(treatmentItem) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'treatmentItem' + sq + ',this.value)" onblur="revalidateRowAndRefresh(' + sq + key + sq + ')"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(appointmentTime) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'appointmentTime' + sq + ',this.value)" onblur="revalidateRowAndRefresh(' + sq + key + sq + ')"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(doctor) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'doctor' + sq + ',this.value)" onblur="revalidateRowAndRefresh(' + sq + key + sq + ')"></td>' +
           '<td>' + esc(notes) + '</td>' +
           '<td>' + (tags || '<span style="color:#389e0d;">正常</span>') + '</td>' +
         '</tr>';
@@ -944,7 +1036,7 @@ function generateImportPage() {
     async function confirmImport() {
       if (!currentPreviewId) return;
       document.getElementById('confirmBtn').disabled = true;
-      
+
       const skipRows = Object.keys(rowSkipMap);
       const editedRows = {};
       for (const k in rowEditMap) {
@@ -952,7 +1044,7 @@ function generateImportPage() {
           editedRows[k] = rowEditMap[k];
         }
       }
-      
+
       try {
         const res = await fetch('/api/appointments/confirm-import/' + currentPreviewId, {
           method: 'POST',
@@ -963,7 +1055,38 @@ function generateImportPage() {
         if (data.success) {
           document.getElementById('previewSection').classList.add('hidden');
           document.getElementById('resultSection').classList.remove('hidden');
-          document.getElementById('resultText').textContent = '成功导入 ' + data.summary.imported + ' 条，跳过 ' + data.summary.skipped + ' 条';
+
+          const s = data.summary;
+          let mainText = '导入成功 ' + s.imported + ' 条';
+          if (s.editedImportedCount > 0) {
+            mainText += '（其中 ' + s.editedImportedCount + ' 条是编辑后通过）';
+          }
+          mainText += '，手动跳过 ' + s.manuallySkipped + ' 条';
+          document.getElementById('resultText').textContent = mainText;
+
+          let statsHtml = '<span class="result-stat result-stat-ok">成功导入：' + s.imported + ' 条</span>';
+          if (s.editedImportedCount > 0) {
+            statsHtml += '<span class="result-stat result-stat-edit">编辑后通过：' + s.editedImportedCount + ' 条</span>';
+          }
+          if (s.skipped > 0) {
+            statsHtml += '<span class="result-stat result-stat-skip">跳过：' + s.skipped + ' 条</span>';
+          }
+          document.getElementById('resultStats').innerHTML = statsHtml;
+
+          if (s.skippedRowDetails && s.skippedRowDetails.length > 0) {
+            document.getElementById('resultDetail').classList.remove('hidden');
+            let detailHtml = '';
+            s.skippedRowDetails.forEach(d => {
+              detailHtml += '<div class="result-detail-item">' +
+                '<span class="result-detail-name">' + esc(d.patientName || '(空)') + '</span>' +
+                '<span class="result-detail-phone">' + esc(d.phone || '') + '</span>' +
+                '<div class="result-detail-reason">原因：' + esc(d.reason || '') + '</div>' +
+                '</div>';
+            });
+            document.getElementById('resultDetailList').innerHTML = detailHtml;
+          } else {
+            document.getElementById('resultDetail').classList.add('hidden');
+          }
         } else {
           alert(data.error);
           document.getElementById('confirmBtn').disabled = false;

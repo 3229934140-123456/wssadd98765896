@@ -1,119 +1,132 @@
 [
   {
-    "id": "8b25b8ce-0760-4a30-b7fd-465c1d3516f8",
-    "sourceType": "appointment",
-    "sourceId": "bafac526-667f-4378-a928-5316181b96e6",
-    "phone": "13922220001",
-    "submittedAt": "2026-06-20T19:23:13.478Z",
-    "stage": "contacted",
-    "patientName": "进度同步测试",
-    "treatmentItemName": "补牙复诊",
-    "doctor": "张医生",
-    "appointmentTime": "2026-06-22T07:00:00.476Z",
-    "chair": null,
-    "message": "前台已联系（需改约）",
-    "history": [
-      {
-        "stage": "submitted",
-        "message": "已提交预约确认申请",
-        "at": "2026-06-20T19:23:13.478Z"
-      },
-      {
-        "stage": "confirmed",
-        "message": "新时间已确认",
-        "at": "2026-06-20T19:23:13.480Z"
-      },
-      {
-        "stage": "contacted",
-        "message": "前台已联系（无人接听）",
-        "at": "2026-06-20T19:23:13.484Z"
-      },
-      {
-        "stage": "contacted",
-        "message": "前台已联系（需改约）",
-        "at": "2026-06-20T19:23:13.485Z"
-      }
-    ],
-    "createdAt": "2026-06-20T19:23:13.478Z",
-    "updatedAt": "2026-06-20T19:23:13.485Z",
-    "appointmentId": "bafac526-667f-4378-a928-5316181b96e6",
-    "note": "改约成功"
-  },
-  {
-    "id": "359a3d06-5425-404e-bdb0-4d3a6ac793f0",
-    "sourceType": "appointment",
-    "sourceId": "5a4412d7-4587-4bf2-96a7-b84735f99dc3",
-    "phone": "13922220002",
-    "submittedAt": "2026-06-20T19:23:13.488Z",
-    "stage": "contacted",
-    "patientName": "复盘测试2",
-    "treatmentItemName": "洁牙/洗牙",
-    "doctor": "李医生",
-    "appointmentTime": "2026-06-22T01:00:00.486Z",
-    "chair": null,
-    "message": "前台已联系（无人接听）",
-    "note": "暂时无人接听",
-    "history": [
-      {
-        "stage": "contacted",
-        "message": "前台已联系（无人接听）",
-        "at": "2026-06-20T19:23:13.488Z"
-      }
-    ],
-    "createdAt": "2026-06-20T19:23:13.488Z",
-    "updatedAt": "2026-06-20T19:23:13.488Z"
-  },
-  {
-    "id": "f586e238-e615-4e4e-8902-81f30f04ca6c",
+    "id": "2e7eb96b-264e-4404-83cc-6bd0f07f8da7",
     "sourceType": "reappointment",
-    "sourceId": "b841dbfa-f045-4a8f-a548-3e3701f37179",
-    "phone": "13944440001",
-    "submittedAt": "2026-06-20T19:23:13.504Z",
+    "sourceId": "a3371318-08c5-4f5a-a051-593f5a4fe1f6",
+    "phone": "13955550101",
+    "submittedAt": "2026-06-20T19:55:42.183Z",
     "stage": "confirmed",
-    "patientName": "召回审批测试",
-    "treatmentItemName": "洁牙/洗牙",
+    "patientName": "审批模式测试",
+    "treatmentItemName": "正畸复诊",
     "doctor": "张医生",
-    "proposedTime": "2026-06-26 09:00:13",
+    "proposedTime": "2026-06-26 09:00:00",
     "message": "新时间已确认",
-    "remark": "希望改到上午",
+    "remark": "希望上午来",
     "history": [
       {
         "stage": "submitted",
         "message": "重新预约申请已提交，等待前台确认",
-        "at": "2026-06-20T19:23:13.504Z"
+        "at": "2026-06-20T19:55:42.183Z"
+      },
+      {
+        "stage": "submitted",
+        "message": "已提交召回申请",
+        "at": "2026-06-20T19:55:42.184Z"
       },
       {
         "stage": "confirmed",
         "message": "新时间已确认",
-        "at": "2026-06-20T19:23:13.506Z"
+        "at": "2026-06-20T19:55:42.187Z"
       }
     ],
-    "createdAt": "2026-06-20T19:23:13.504Z",
-    "updatedAt": "2026-06-20T19:23:13.506Z",
-    "newAppointmentId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
-    "appointmentTime": "2026-06-27 14:00:00"
+    "createdAt": "2026-06-20T19:55:42.184Z",
+    "updatedAt": "2026-06-20T19:55:42.187Z",
+    "newAppointmentId": "da4125a0-dea0-42ec-94f9-946a0fa12926",
+    "appointmentTime": "2026-06-27 15:00:00"
   },
   {
-    "id": "25e4712c-cb6f-4091-a949-b72e18a93e35",
+    "id": "ee8c0b0c-8c49-4c92-af66-bb7eb2def0f1",
     "sourceType": "appointment",
-    "sourceId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
-    "phone": "13944440001",
-    "submittedAt": "2026-06-20T19:23:13.507Z",
+    "sourceId": "da4125a0-dea0-42ec-94f9-946a0fa12926",
+    "phone": "13955550101",
+    "submittedAt": "2026-06-20T19:55:42.187Z",
     "stage": "confirmed",
-    "patientName": "召回审批测试",
-    "treatmentItemName": "洁牙/洗牙",
+    "patientName": "审批模式测试",
+    "treatmentItemName": "正畸复诊",
     "doctor": "张医生",
-    "appointmentTime": "2026-06-27 14:00:00",
+    "appointmentTime": "2026-06-27 15:00:00",
     "chair": null,
     "message": "预约已确认",
     "history": [
       {
         "stage": "confirmed",
         "message": "预约已确认",
-        "at": "2026-06-20T19:23:13.507Z"
+        "at": "2026-06-20T19:55:42.187Z"
       }
     ],
-    "createdAt": "2026-06-20T19:23:13.507Z",
-    "updatedAt": "2026-06-20T19:23:13.507Z"
+    "createdAt": "2026-06-20T19:55:42.187Z",
+    "updatedAt": "2026-06-20T19:55:42.187Z"
+  },
+  {
+    "id": "00bf9480-c530-4c1e-a767-84d8c77c4381",
+    "sourceType": "appointment",
+    "sourceId": "5cd1815a-9aee-4c98-93d2-0ebf725ea3ef",
+    "phone": "13955550401",
+    "submittedAt": "2026-06-20T19:55:42.206Z",
+    "stage": "contacted",
+    "patientName": "下钻测试A",
+    "treatmentItemName": "洁牙/洗牙",
+    "doctor": "张医生",
+    "appointmentTime": "2026-06-22T02:00:42.200Z",
+    "chair": null,
+    "message": "前台已联系（无人接听）",
+    "note": "上午打不通",
+    "history": [
+      {
+        "stage": "contacted",
+        "message": "前台已联系（无人接听）",
+        "at": "2026-06-20T19:55:42.206Z"
+      }
+    ],
+    "createdAt": "2026-06-20T19:55:42.206Z",
+    "updatedAt": "2026-06-20T19:55:42.206Z"
+  },
+  {
+    "id": "e205a02b-25bb-42c3-87ca-4fa61c326e2a",
+    "sourceType": "appointment",
+    "sourceId": "f5e1900e-9bab-44e1-9f06-22fa9fad60cc",
+    "phone": "13955550402",
+    "submittedAt": "2026-06-20T19:55:42.208Z",
+    "stage": "contacted",
+    "patientName": "下钻测试B",
+    "treatmentItemName": "补牙复诊",
+    "doctor": "李医生",
+    "appointmentTime": "2026-06-22T06:00:42.201Z",
+    "chair": null,
+    "message": "前台已联系（需改约）",
+    "note": "改到下周一",
+    "history": [
+      {
+        "stage": "contacted",
+        "message": "前台已联系（需改约）",
+        "at": "2026-06-20T19:55:42.208Z"
+      }
+    ],
+    "createdAt": "2026-06-20T19:55:42.208Z",
+    "updatedAt": "2026-06-20T19:55:42.208Z"
+  },
+  {
+    "id": "bc3b0200-34a2-4ce8-bdd7-88832659ade8",
+    "sourceType": "appointment",
+    "sourceId": "daa227af-cd24-46f2-95c2-2a95cb36a1a9",
+    "phone": "13955550403",
+    "submittedAt": "2026-06-20T19:55:42.210Z",
+    "stage": "contacted",
+    "patientName": "下钻测试C",
+    "treatmentItemName": "种植复查",
+    "doctor": "张医生",
+    "appointmentTime": "2026-06-22T07:30:42.203Z",
+    "chair": null,
+    "message": "前台已联系（无人接听）",
+    "note": "暂时无法联系",
+    "history": [
+      {
+        "stage": "contacted",
+        "message": "前台已联系（无人接听）",
+        "at": "2026-06-20T19:55:42.210Z"
+      }
+    ],
+    "createdAt": "2026-06-20T19:55:42.210Z",
+    "updatedAt": "2026-06-20T19:55:42.210Z"
   }
 ]

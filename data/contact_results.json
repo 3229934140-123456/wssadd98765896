@@ -1,34 +1,26 @@
 [
   {
-    "id": "3904af51-be58-40a1-afb3-34af13d8bff3",
-    "appointmentId": "bafac526-667f-4378-a928-5316181b96e6",
-    "result": "reached_confirmed",
-    "operator": "前台小美",
-    "note": "患者来电确认时间",
-    "createdAt": "2026-06-20T19:23:13.479Z"
-  },
-  {
-    "id": "f1b08edf-1fd5-4c8e-ad77-fe0ce154d394",
-    "appointmentId": "bafac526-667f-4378-a928-5316181b96e6",
+    "id": "cfe978e6-a40a-4065-ab81-0cd8ab37c379",
+    "appointmentId": "5cd1815a-9aee-4c98-93d2-0ebf725ea3ef",
     "result": "no_answer",
     "operator": "前台小美",
-    "note": "第一次打不通",
-    "createdAt": "2026-06-20T19:23:13.483Z"
+    "note": "上午打不通",
+    "createdAt": "2026-06-20T19:55:42.205Z"
   },
   {
-    "id": "6f009224-89d6-4a10-9ec9-734d43482193",
-    "appointmentId": "bafac526-667f-4378-a928-5316181b96e6",
+    "id": "0d5e1345-6ae0-4f70-9676-a48a18f7688e",
+    "appointmentId": "f5e1900e-9bab-44e1-9f06-22fa9fad60cc",
     "result": "reached_rescheduled",
     "operator": "前台小美",
-    "note": "改约成功",
-    "createdAt": "2026-06-20T19:23:13.484Z"
+    "note": "改到下周一",
+    "createdAt": "2026-06-20T19:55:42.207Z"
   },
   {
-    "id": "5cb6ebff-a361-48e1-8bd6-840a66fb5a33",
-    "appointmentId": "5a4412d7-4587-4bf2-96a7-b84735f99dc3",
+    "id": "9ae97196-d799-4dda-aa63-a194bf75c22e",
+    "appointmentId": "daa227af-cd24-46f2-95c2-2a95cb36a1a9",
     "result": "no_answer",
     "operator": "前台小王",
-    "note": "暂时无人接听",
-    "createdAt": "2026-06-20T19:23:13.487Z"
+    "note": "暂时无法联系",
+    "createdAt": "2026-06-20T19:55:42.209Z"
   }
 ]

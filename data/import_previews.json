@@ -1,34 +1,129 @@
 [
   {
-    "id": "87b14a22-7bf3-4c8f-a17e-8cba0fa8a100",
+    "id": "07965f4e-5018-4747-857d-8261ad087e3c",
     "rows": [
       {
-        "rowKey": "f804842a-6bb7-4b62-8edb-9420820c31bc",
+        "rowKey": "7b433dfd-53e9-4654-ba4c-b8c642b1786e",
         "rawIndex": 0,
         "row": 1,
         "data": {
-          "patientName": "同义词识别正常",
-          "phone": "13933330001",
-          "treatmentItem": "orthodontics",
-          "appointmentTime": "2026-06-23 11:00:00",
+          "patientName": "一开始错的行",
+          "phone": "",
+          "treatmentItem": "fluoride",
+          "appointmentTime": "不是时间",
+          "doctor": "王医生",
+          "notes": "缺手机+时间错"
+        },
+        "issues": [
+          "缺少手机号",
+          "预约时间格式不正确"
+        ],
+        "warnings": [],
+        "status": "error"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "ok": 0,
+      "warning": 0,
+      "error": 1,
+      "canImport": 0
+    },
+    "status": "pending",
+    "confirmedAt": null,
+    "importResults": null,
+    "createdAt": "2026-06-20T19:55:42.191Z"
+  },
+  {
+    "id": "2649d9b4-a144-4b24-8621-d05cf14ce98c",
+    "rows": [
+      {
+        "rowKey": "1d86ef16-5e32-4972-88d8-5ea48b626f76",
+        "rawIndex": 0,
+        "row": 1,
+        "data": {
+          "patientName": "一开始错的行",
+          "phone": "",
+          "treatmentItem": "fluoride",
+          "appointmentTime": "不是时间",
+          "doctor": "王医生",
+          "notes": "缺手机+时间错"
+        },
+        "issues": [
+          "缺少手机号",
+          "预约时间格式不正确"
+        ],
+        "warnings": [],
+        "status": "error"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "ok": 0,
+      "warning": 0,
+      "error": 1,
+      "canImport": 0
+    },
+    "status": "confirmed",
+    "confirmedAt": "2026-06-20T19:55:42.195Z",
+    "importResults": [
+      {
+        "row": 1,
+        "status": "success",
+        "appointmentId": "485401e7-eec7-4ee2-85ae-dd396d188613",
+        "data": {
+          "patientName": "已经改对",
+          "phone": "13955550201",
+          "treatmentItem": "fluoride",
+          "appointmentTime": "2026-06-23 10:00:00",
+          "doctor": "王医生",
+          "notes": "修好啦"
+        }
+      }
+    ],
+    "createdAt": "2026-06-20T19:55:42.192Z",
+    "skipRows": [],
+    "editedRows": {
+      "1d86ef16-5e32-4972-88d8-5ea48b626f76": {
+        "patientName": "已经改对",
+        "phone": "13955550201",
+        "treatmentItem": "fluoride",
+        "appointmentTime": "2026-06-23 10:00",
+        "doctor": "王医生",
+        "notes": "修好啦"
+      }
+    }
+  },
+  {
+    "id": "e24c2b31-1cb2-469b-94c9-2a23475a5d21",
+    "rows": [
+      {
+        "rowKey": "d03a3aae-61eb-4c43-a1b8-1001fe9f0b0b",
+        "rawIndex": 0,
+        "row": 1,
+        "data": {
+          "patientName": "要跳过的行",
+          "phone": "13955550301",
+          "treatmentItem": "cleaning",
+          "appointmentTime": "2026-06-24 09:00:00",
           "doctor": "张医生",
-          "notes": "正畸复诊"
+          "notes": ""
         },
         "issues": [],
         "warnings": [],
         "status": "ok"
       },
       {
-        "rowKey": "dc2d12ea-70f1-44b5-a36f-5cfbf48a990a",
+        "rowKey": "0a0eedf7-1a36-4db8-8742-16291cfe1bee",
         "rawIndex": 1,
         "row": 2,
         "data": {
-          "patientName": "同义词要跳过",
-          "phone": "13933330002",
-          "treatmentItem": "cleaning",
-          "appointmentTime": "2026-06-23 15:00:00",
+          "patientName": "正常入库行",
+          "phone": "13955550302",
+          "treatmentItem": "filling",
+          "appointmentTime": "2026-06-24 11:00:00",
           "doctor": "李医生",
-          "notes": "洗牙"
+          "notes": ""
         },
         "issues": [],
         "warnings": [],
@@ -43,31 +138,26 @@
       "canImport": 2
     },
     "status": "confirmed",
-    "confirmedAt": "2026-06-20T19:23:13.497Z",
+    "confirmedAt": "2026-06-20T19:55:42.198Z",
     "importResults": [
       {
         "row": 1,
         "status": "success",
-        "appointmentId": "3cb01701-6722-4bbb-88e8-53860c3dabb1",
+        "appointmentId": "6e68ea22-7f6c-4d6b-b368-453c2390a71e",
         "data": {
-          "patientName": "同义词已修改",
-          "phone": "13933339999",
-          "treatmentItem": "orthodontics",
-          "appointmentTime": "2026-06-23 11:00:00",
-          "doctor": "张医生",
-          "notes": "正畸复诊"
+          "patientName": "正常入库行",
+          "phone": "13955550302",
+          "treatmentItem": "filling",
+          "appointmentTime": "2026-06-24 11:00:00",
+          "doctor": "李医生",
+          "notes": ""
         }
       }
     ],
-    "createdAt": "2026-06-20T19:23:13.495Z",
+    "createdAt": "2026-06-20T19:55:42.197Z",
     "skipRows": [
-      "dc2d12ea-70f1-44b5-a36f-5cfbf48a990a"
+      "d03a3aae-61eb-4c43-a1b8-1001fe9f0b0b"
     ],
-    "editedRows": {
-      "f804842a-6bb7-4b62-8edb-9420820c31bc": {
-        "patientName": "同义词已修改",
-        "phone": "13933339999"
-      }
-    }
+    "editedRows": {}
   }
 ]
