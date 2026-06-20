@@ -5,6 +5,28 @@ const scheduleService = require('./scheduleService');
 const { getItemInfo, getItemName } = require('../config/treatmentItems');
 const dayjs = require('dayjs');
 const config = require('../config');
+const { v4: uuidv4 } = require('uuid');
+
+const HEADER_SYNONYMS = {
+  patientName: ['姓名', '患者', '患者姓名', '名字', 'name', 'patient'],
+  phone: ['手机号', '电话', '联系方式', '联系电话', '手机', 'phone', 'mobile', 'tel'],
+  treatmentItem: ['项目', '复诊类型', '复诊项目', '治疗类型', '治疗项目', 'item', 'treatment', 'type'],
+  appointmentTime: ['时间', '预约日期', '就诊时间', '日期', 'date', 'appointment time', 'appointmenttime', 'time'],
+  doctor: ['医生', '预约医生', '主治医生', '医师', 'doctor', 'physician'],
+  notes: ['备注', '说明', '注释', 'note', 'remark', 'comment']
+};
+
+function matchHeaderField(headerCell) {
+  const cell = String(headerCell || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  for (const [field, synonyms] of Object.entries(HEADER_SYNONYMS)) {
+    for (const syn of synonyms) {
+      if (cell.includes(syn.toLowerCase())) {
+        return field;
+      }
+    }
+  }
+  return null;
+}
 
 class AppointmentService {
   
@@ -413,7 +435,7 @@ class AppointmentService {
     };
   }
   
-  addContactResult(appointmentId, result, operator = '前台', note = '') {
+  async addContactResult(appointmentId, result, operator = '前台', note = '') {
     const appointment = dataStore.getAppointment(appointmentId);
     if (!appointment) {
       return { success: false, error: '预约不存在' };
@@ -432,11 +454,14 @@ class AppointmentService {
     });
     
     if (result === 'reached_confirmed') {
-      this.confirmAppointment(appointmentId);
-      this._updateProgress('appointment', appointmentId, appointment.phone, {
-        stage: 'contacted',
-        message: '前台已联系并确认预约'
-      });
+      const confirmResult = this.confirmAppointment(appointmentId);
+      if (confirmResult.success && confirmResult.data) {
+        this._updateProgress('appointment', appointmentId, appointment.phone, {
+          stage: 'confirmed',
+          message: '新时间已确认',
+          appointmentTime: confirmResult.data.appointmentTime
+        });
+      }
     } else if (result === 'reached_cancelled') {
       this.cancelAppointment(appointmentId, '电话联系后取消');
     } else {
@@ -874,6 +899,8 @@ class AppointmentService {
         : 'ok';
       
       return {
+        rowKey: uuidv4(),
+        rawIndex: i,
         row: rowNum,
         data: {
           patientName: row.patientName || '',
@@ -907,7 +934,10 @@ class AppointmentService {
     };
   }
   
-  confirmBatchImport(previewId) {
+  confirmBatchImport(previewId, options = {}) {
+    const { skipRows = [], editedRows = {} } = options;
+    const skipSet = new Set(skipRows || []);
+    
     const preview = dataStore.getImportPreview(previewId);
     if (!preview) {
       return { success: false, error: '预览记录不存在' };
@@ -919,23 +949,39 @@ class AppointmentService {
     
     const validRows = preview.rows
       .filter(r => r.status !== 'error')
-      .map(r => r.data);
+      .filter(r => !skipSet.has(r.rowKey))
+      .map(r => {
+        const edited = editedRows[r.rowKey];
+        if (edited) {
+          return {
+            ...r.data,
+            ...edited,
+            phone: edited.phone ? String(edited.phone).replace(/\D/g, '') : r.data.phone
+          };
+        }
+        return r.data;
+      });
+    
+    const manuallySkippedCount = preview.rows.filter(r => skipSet.has(r.rowKey)).length;
     
     const results = dataStore.batchCreateAppointments(validRows);
     
     dataStore.updateImportPreview(previewId, {
       status: 'confirmed',
       confirmedAt: new Date().toISOString(),
-      importResults: results
+      importResults: results,
+      skipRows: skipRows,
+      editedRows: editedRows
     });
     
     const successCount = results.filter(r => r.status === 'success').length;
-    const skippedCount = results.filter(r => r.status === 'skipped').length;
+    const duplicateSkippedCount = results.filter(r => r.status === 'skipped').length;
+    const totalSkipped = manuallySkippedCount + duplicateSkippedCount;
     
     dataStore.addRecord({
       type: 'batch_import',
-      content: `批量导入：共${preview.summary.total}条（预览），成功${successCount}条，跳过${skippedCount}条`,
-      details: { previewId, success: successCount, skipped: skippedCount }
+      content: `批量导入：共${preview.summary.total}条（预览），成功${successCount}条，跳过${totalSkipped}条`,
+      details: { previewId, success: successCount, skipped: totalSkipped, manuallySkipped: manuallySkippedCount, duplicateSkipped: duplicateSkippedCount }
     });
     
     return {
@@ -943,7 +989,9 @@ class AppointmentService {
       summary: {
         previewedTotal: preview.summary.total,
         imported: successCount,
-        skipped: skippedCount
+        skipped: totalSkipped,
+        manuallySkipped: manuallySkippedCount,
+        duplicateSkipped: duplicateSkippedCount
       },
       results
     };
@@ -955,20 +1003,45 @@ class AppointmentService {
     
     const delimiter = lines[0].includes('\t') ? '\t' : (lines[0].includes(',') ? ',' : /\s+/);
     
+    const splitLine = (line) => {
+      if (delimiter instanceof RegExp) {
+        return line.split(delimiter).map(s => s.trim());
+      }
+      return line.split(delimiter).map(s => s.trim());
+    };
+    
     let dataLines = lines;
+    let headerMap = null;
+    
     if (lines.length > 1) {
-      const header = lines[0].split(delimiter).map(s => s.trim());
-      const headerText = header.join(' ');
-      if (headerText.includes('姓名') || headerText.includes('name') ||
-          headerText.includes('手机') || headerText.includes('phone') ||
-          headerText.includes('项目') || headerText.includes('医生') ||
-          headerText.includes('时间') || headerText.includes('time')) {
+      const headerCells = splitLine(lines[0]);
+      const matchedFields = headerCells.map(cell => matchHeaderField(cell));
+      const matchedCount = matchedFields.filter(f => f !== null).length;
+      const uniqueFields = new Set(matchedFields.filter(f => f !== null)).size;
+      
+      if (uniqueFields >= 2 && matchedCount >= headerCells.length * 0.5) {
+        headerMap = {};
+        matchedFields.forEach((field, idx) => {
+          if (field && headerMap[field] == null) {
+            headerMap[field] = idx;
+          }
+        });
         dataLines = lines.slice(1);
       }
     }
     
     const rows = dataLines.map(line => {
-      const parts = line.split(delimiter).map(s => s.trim());
+      const parts = splitLine(line);
+      if (headerMap) {
+        return {
+          patientName: headerMap.patientName != null ? (parts[headerMap.patientName] || '') : '',
+          phone: headerMap.phone != null ? (parts[headerMap.phone] || '') : '',
+          treatmentItem: headerMap.treatmentItem != null ? (parts[headerMap.treatmentItem] || '') : '',
+          appointmentTime: headerMap.appointmentTime != null ? (parts[headerMap.appointmentTime] || '') : '',
+          doctor: headerMap.doctor != null ? (parts[headerMap.doctor] || '') : '',
+          notes: headerMap.notes != null ? (parts[headerMap.notes] || '') : ''
+        };
+      }
       return {
         patientName: parts[0] || '',
         phone: parts[1] || '',
@@ -986,25 +1059,26 @@ class AppointmentService {
     const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim());
     if (lines.length === 0) return [];
     
-    const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const header = lines[0].split(',').map(h => h.trim());
     const dataLines = lines.slice(1);
     
-    const nameIdx = header.findIndex(h => h.includes('姓名') || h.includes('name'));
-    const phoneIdx = header.findIndex(h => h.includes('手机') || h.includes('phone'));
-    const itemIdx = header.findIndex(h => h.includes('项目') || h.includes('item') || h.includes('treatment'));
-    const timeIdx = header.findIndex(h => h.includes('时间') || h.includes('time') || h.includes('date'));
-    const docIdx = header.findIndex(h => h.includes('医生') || h.includes('doctor'));
-    const noteIdx = header.findIndex(h => h.includes('备注') || h.includes('note'));
+    const headerMap = {};
+    header.forEach((cell, idx) => {
+      const field = matchHeaderField(cell);
+      if (field && headerMap[field] == null) {
+        headerMap[field] = idx;
+      }
+    });
     
     return dataLines.map(line => {
       const parts = line.split(',').map(s => s.trim().replace(/^"|"$/g, ''));
       return {
-        patientName: nameIdx >= 0 ? parts[nameIdx] : '',
-        phone: phoneIdx >= 0 ? parts[phoneIdx] : '',
-        treatmentItem: itemIdx >= 0 ? parts[itemIdx] : '',
-        appointmentTime: timeIdx >= 0 ? parts[timeIdx] : '',
-        doctor: docIdx >= 0 ? parts[docIdx] : '',
-        notes: noteIdx >= 0 ? parts[noteIdx] : ''
+        patientName: headerMap.patientName != null ? (parts[headerMap.patientName] || '') : '',
+        phone: headerMap.phone != null ? (parts[headerMap.phone] || '') : '',
+        treatmentItem: headerMap.treatmentItem != null ? (parts[headerMap.treatmentItem] || '') : '',
+        appointmentTime: headerMap.appointmentTime != null ? (parts[headerMap.appointmentTime] || '') : '',
+        doctor: headerMap.doctor != null ? (parts[headerMap.doctor] || '') : '',
+        notes: headerMap.notes != null ? (parts[headerMap.notes] || '') : ''
       };
     });
   }
@@ -1035,6 +1109,120 @@ class AppointmentService {
         errors: errorCount
       },
       results
+    };
+  }
+  
+  getContactStatistics({ dateRange = 'today', doctor, treatmentItem } = {}) {
+    const appointments = dataStore.getAllAppointments();
+    const contactResults = dataStore.getAllContactResults();
+    
+    let start, end;
+    if (dateRange === 'week') {
+      start = dayjs().startOf('week');
+      end = dayjs().endOf('week');
+    } else {
+      start = dayjs().startOf('day');
+      end = dayjs().endOf('day');
+    }
+    
+    const apptMap = {};
+    appointments.forEach(a => { apptMap[a.id] = a; });
+    
+    const filteredContactResults = contactResults.filter(cr => {
+      const crTime = dayjs(cr.createdAt);
+      if (!crTime.isAfter(start) || !crTime.isBefore(end)) return false;
+      const appt = apptMap[cr.appointmentId];
+      if (!appt) return false;
+      if (doctor && appt.doctor !== doctor) return false;
+      if (treatmentItem && appt.treatmentItem !== treatmentItem) return false;
+      return true;
+    });
+    
+    const filteredAppointments = appointments.filter(a => {
+      if (doctor && a.doctor !== doctor) return false;
+      if (treatmentItem && a.treatmentItem !== treatmentItem) return false;
+      const apptTime = dayjs(a.appointmentTime);
+      return apptTime.isAfter(start.subtract(7, 'day')) && apptTime.isBefore(end.add(7, 'day'));
+    });
+    
+    const processedApptIds = new Set(filteredContactResults.map(cr => cr.appointmentId));
+    
+    const totalPending = filteredAppointments.filter(a => 
+      a.status === 'pending' || a.status === 'confirmed'
+    ).length;
+    
+    const processedCount = processedApptIds.size;
+    
+    const reachedCount = filteredContactResults.filter(cr => 
+      ['reached_confirmed', 'reached_rescheduled', 'reached_cancelled'].includes(cr.result)
+    ).length;
+    
+    const noAnswerCount = filteredContactResults.filter(cr => 
+      cr.result === 'no_answer'
+    ).length;
+    
+    const rescheduledCount = filteredContactResults.filter(cr => 
+      cr.result === 'reached_rescheduled'
+    ).length;
+    
+    const confirmedCount = filteredContactResults.filter(cr => 
+      cr.result === 'reached_confirmed'
+    ).length;
+    
+    const noShowCount = filteredAppointments.filter(a => 
+      a.status === 'no_show'
+    ).length;
+    
+    const todayProcessedList = filteredContactResults
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(cr => {
+        const appt = apptMap[cr.appointmentId];
+        return {
+          id: cr.id,
+          appointmentId: cr.appointmentId,
+          patientName: appt ? appt.patientName : '',
+          phone: appt ? appt.phone : '',
+          treatmentItem: appt ? appt.treatmentItem : '',
+          treatmentItemName: appt ? getItemName(appt.treatmentItem) : '',
+          doctor: appt ? appt.doctor : '',
+          appointmentTime: appt ? appt.appointmentTime : null,
+          result: cr.result,
+          resultText: this._translateResult(cr.result),
+          operator: cr.operator,
+          note: cr.note,
+          createdAt: cr.createdAt,
+          appointmentStatus: appt ? appt.status : ''
+        };
+      });
+    
+    const allDoctors = [...new Set(appointments.map(a => a.doctor).filter(Boolean))].sort();
+    const allTreatmentItems = [...new Set(appointments.map(a => a.treatmentItem).filter(Boolean))].map(key => ({
+      key,
+      name: getItemName(key)
+    }));
+    
+    return {
+      success: true,
+      data: {
+        dateRange,
+        dateRangeText: dateRange === 'week' ? '本周' : '今日',
+        statistics: {
+          totalPending,
+          processedCount,
+          reachedCount,
+          noAnswerCount,
+          rescheduledCount,
+          confirmedCount,
+          noShowCount
+        },
+        todayProcessedList,
+        filters: {
+          doctors: allDoctors,
+          treatmentItems: allTreatmentItems,
+          selectedDoctor: doctor || '',
+          selectedTreatmentItem: treatmentItem || ''
+        }
+      }
     };
   }
   

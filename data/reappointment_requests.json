@@ -1,18 +1,19 @@
 [
   {
-    "id": "4c74d3fa-4699-44b3-9458-6de5f2fe2772",
-    "sourceAppointmentId": "c8947f91-9877-4a8f-983a-1086fe42c4fe",
-    "patientName": "召回进度测试",
-    "phone": "13900000202",
+    "id": "b841dbfa-f045-4a8f-a548-3e3701f37179",
+    "sourceAppointmentId": "4ee77804-4086-40d4-aa5d-f9d27eb2497e",
+    "patientName": "召回审批测试",
+    "phone": "13944440001",
     "openid": null,
-    "treatmentItem": "filling",
+    "treatmentItem": "cleaning",
     "doctor": "张医生",
-    "proposedTime": "2026-06-26T03:00:31.022Z",
-    "remark": "想补个牙",
-    "status": "pending",
-    "processedBy": null,
-    "processedAt": null,
-    "newAppointmentId": null,
-    "createdAt": "2026-06-20T18:49:31.023Z"
+    "proposedTime": "2026-06-26 09:00:13",
+    "remark": "希望改到上午",
+    "status": "approved",
+    "processedBy": "前台小美",
+    "processedAt": "2026-06-20T19:23:13.506Z",
+    "newAppointmentId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
+    "createdAt": "2026-06-20T19:23:13.503Z",
+    "finalTime": "2026-06-27 14:00:00"
   }
 ]

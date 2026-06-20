@@ -59,7 +59,7 @@ app.use((req, res) => {
 const PORT = config.port;
 app.listen(PORT, () => {
   console.log('\n' + '='.repeat(65));
-  console.log('  口腔诊所微信公众号自动化提醒服务  v2.0');
+  console.log('  口腔诊所微信公众号自动化提醒服务  v3.0');
   console.log('  Dental Clinic WeChat Reminder Service');
   console.log('='.repeat(65));
   console.log(`\n  服务地址:   http://localhost:${PORT}`);
@@ -78,10 +78,16 @@ app.listen(PORT, () => {
   console.log('  ✓ 🆕 医生+椅位排班冲突检测 + 推荐可选时间');
   console.log('  ✓ 🆕 患者端处理进度页（提交→联系→确认三态）');
   console.log('  ✓ 🆕 批量导入（粘贴表格/CSV + 预览查重/校验）');
+  console.log('  ✓ ✨ 排班作战图（医生/椅位双视角时间轴 + 点击看详情）');
+  console.log('  ✓ ✨ 联系结果自动推进患者进度到已确认新时间');
+  console.log('  ✓ ✨ 前台电话跟进复盘（今日/本周 + 医生/项目筛选）');
+  console.log('  ✓ ✨ 批量导入同义词表头识别 + 预览编辑/跳过');
   console.log('  ✓ 联系结果标记与历史记录');
   console.log('-'.repeat(65));
   console.log(`\n  常用入口:`);
   console.log(`  前台任务中心:     http://localhost:${PORT}/api/admin/workbench/page`);
+  console.log(`  排班作战图:       http://localhost:${PORT}/api/admin/schedule/page`);
+  console.log(`  复盘统计页:       http://localhost:${PORT}/api/admin/statistics/page`);
   console.log(`  批量导入页:       http://localhost:${PORT}/api/appointments/import-page`);
   console.log(`  患者进度查询:     http://localhost:${PORT}/api/patients/progress`);
   console.log(`  排班冲突检测:     http://localhost:${PORT}/api/appointments/conflict-check`);

@@ -1,62 +1,119 @@
 [
   {
-    "id": "c8128f93-619e-4a5e-953b-88fe8fb9dcbf",
+    "id": "8b25b8ce-0760-4a30-b7fd-465c1d3516f8",
     "sourceType": "appointment",
-    "sourceId": "37df6867-7c33-4a3a-8c4e-bda3d68c6880",
-    "phone": "13900000201",
-    "submittedAt": "2026-06-20T18:49:31.013Z",
-    "stage": "confirmed",
-    "patientName": "进度测试患者",
-    "treatmentItemName": "根管治疗复诊",
-    "doctor": "赵医生",
-    "appointmentTime": "2026-06-27T07:00:31.012Z",
+    "sourceId": "bafac526-667f-4378-a928-5316181b96e6",
+    "phone": "13922220001",
+    "submittedAt": "2026-06-20T19:23:13.478Z",
+    "stage": "contacted",
+    "patientName": "进度同步测试",
+    "treatmentItemName": "补牙复诊",
+    "doctor": "张医生",
+    "appointmentTime": "2026-06-22T07:00:00.476Z",
     "chair": null,
-    "message": "新时间已确认",
-    "newTime": "2026-06-27T07:00:31.012Z",
-    "reason": "临时有事需要改到下午",
+    "message": "前台已联系（需改约）",
     "history": [
       {
         "stage": "submitted",
-        "message": "改约申请已提交，等待前台确认",
-        "at": "2026-06-20T18:49:31.013Z"
-      },
-      {
-        "stage": "contacted",
-        "message": "前台已联系（需改约）",
-        "at": "2026-06-20T18:49:31.016Z"
+        "message": "已提交预约确认申请",
+        "at": "2026-06-20T19:23:13.478Z"
       },
       {
         "stage": "confirmed",
         "message": "新时间已确认",
-        "at": "2026-06-20T18:49:31.018Z"
+        "at": "2026-06-20T19:23:13.480Z"
+      },
+      {
+        "stage": "contacted",
+        "message": "前台已联系（无人接听）",
+        "at": "2026-06-20T19:23:13.484Z"
+      },
+      {
+        "stage": "contacted",
+        "message": "前台已联系（需改约）",
+        "at": "2026-06-20T19:23:13.485Z"
       }
     ],
-    "createdAt": "2026-06-20T18:49:31.013Z",
-    "updatedAt": "2026-06-20T18:49:31.018Z",
-    "note": "已联系确认改约",
-    "appointmentId": "37df6867-7c33-4a3a-8c4e-bda3d68c6880"
+    "createdAt": "2026-06-20T19:23:13.478Z",
+    "updatedAt": "2026-06-20T19:23:13.485Z",
+    "appointmentId": "bafac526-667f-4378-a928-5316181b96e6",
+    "note": "改约成功"
   },
   {
-    "id": "23844a02-6d03-4f40-88b0-b8be71645dbc",
+    "id": "359a3d06-5425-404e-bdb0-4d3a6ac793f0",
+    "sourceType": "appointment",
+    "sourceId": "5a4412d7-4587-4bf2-96a7-b84735f99dc3",
+    "phone": "13922220002",
+    "submittedAt": "2026-06-20T19:23:13.488Z",
+    "stage": "contacted",
+    "patientName": "复盘测试2",
+    "treatmentItemName": "洁牙/洗牙",
+    "doctor": "李医生",
+    "appointmentTime": "2026-06-22T01:00:00.486Z",
+    "chair": null,
+    "message": "前台已联系（无人接听）",
+    "note": "暂时无人接听",
+    "history": [
+      {
+        "stage": "contacted",
+        "message": "前台已联系（无人接听）",
+        "at": "2026-06-20T19:23:13.488Z"
+      }
+    ],
+    "createdAt": "2026-06-20T19:23:13.488Z",
+    "updatedAt": "2026-06-20T19:23:13.488Z"
+  },
+  {
+    "id": "f586e238-e615-4e4e-8902-81f30f04ca6c",
     "sourceType": "reappointment",
-    "sourceId": "4c74d3fa-4699-44b3-9458-6de5f2fe2772",
-    "phone": "13900000202",
-    "submittedAt": "2026-06-20T18:49:31.023Z",
-    "stage": "submitted",
-    "patientName": "召回进度测试",
-    "treatmentItemName": "补牙复诊",
+    "sourceId": "b841dbfa-f045-4a8f-a548-3e3701f37179",
+    "phone": "13944440001",
+    "submittedAt": "2026-06-20T19:23:13.504Z",
+    "stage": "confirmed",
+    "patientName": "召回审批测试",
+    "treatmentItemName": "洁牙/洗牙",
     "doctor": "张医生",
-    "proposedTime": "2026-06-26T03:00:31.022Z",
-    "message": "重新预约申请已提交，等待前台确认",
-    "remark": "想补个牙",
+    "proposedTime": "2026-06-26 09:00:13",
+    "message": "新时间已确认",
+    "remark": "希望改到上午",
     "history": [
       {
         "stage": "submitted",
         "message": "重新预约申请已提交，等待前台确认",
-        "at": "2026-06-20T18:49:31.023Z"
+        "at": "2026-06-20T19:23:13.504Z"
+      },
+      {
+        "stage": "confirmed",
+        "message": "新时间已确认",
+        "at": "2026-06-20T19:23:13.506Z"
       }
     ],
-    "createdAt": "2026-06-20T18:49:31.023Z",
-    "updatedAt": "2026-06-20T18:49:31.023Z"
+    "createdAt": "2026-06-20T19:23:13.504Z",
+    "updatedAt": "2026-06-20T19:23:13.506Z",
+    "newAppointmentId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
+    "appointmentTime": "2026-06-27 14:00:00"
+  },
+  {
+    "id": "25e4712c-cb6f-4091-a949-b72e18a93e35",
+    "sourceType": "appointment",
+    "sourceId": "8783cf51-82db-499c-9ffa-26e56e7021dd",
+    "phone": "13944440001",
+    "submittedAt": "2026-06-20T19:23:13.507Z",
+    "stage": "confirmed",
+    "patientName": "召回审批测试",
+    "treatmentItemName": "洁牙/洗牙",
+    "doctor": "张医生",
+    "appointmentTime": "2026-06-27 14:00:00",
+    "chair": null,
+    "message": "预约已确认",
+    "history": [
+      {
+        "stage": "confirmed",
+        "message": "预约已确认",
+        "at": "2026-06-20T19:23:13.507Z"
+      }
+    ],
+    "createdAt": "2026-06-20T19:23:13.507Z",
+    "updatedAt": "2026-06-20T19:23:13.507Z"
   }
 ]

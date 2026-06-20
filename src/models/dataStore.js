@@ -246,6 +246,10 @@ class DataStore {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
   
+  getAllContactResults() {
+    return this._readFile(this.contactResultsFile);
+  }
+  
   createReappointmentRequest(data) {
     const requests = this._readFile(this.reappointmentRequestsFile);
     const request = {

@@ -1,107 +1,73 @@
 [
   {
-    "id": "a038ec37-e132-4721-9951-94c28891604d",
+    "id": "87b14a22-7bf3-4c8f-a17e-8cba0fa8a100",
     "rows": [
       {
+        "rowKey": "f804842a-6bb7-4b62-8edb-9420820c31bc",
+        "rawIndex": 0,
         "row": 1,
         "data": {
-          "patientName": "导入正常",
-          "phone": "13900000301",
+          "patientName": "同义词识别正常",
+          "phone": "13933330001",
           "treatmentItem": "orthodontics",
-          "appointmentTime": "2026-06-24 14:30:00",
+          "appointmentTime": "2026-06-23 11:00:00",
           "doctor": "张医生",
-          "notes": "复诊"
+          "notes": "正畸复诊"
         },
         "issues": [],
         "warnings": [],
         "status": "ok"
       },
       {
+        "rowKey": "dc2d12ea-70f1-44b5-a36f-5cfbf48a990a",
+        "rawIndex": 1,
         "row": 2,
         "data": {
-          "patientName": "导入重复",
-          "phone": "13900000101",
+          "patientName": "同义词要跳过",
+          "phone": "13933330002",
           "treatmentItem": "cleaning",
-          "appointmentTime": "2026-06-25 15:00:00",
-          "doctor": "王医生",
-          "notes": "已存在的手机号"
+          "appointmentTime": "2026-06-23 15:00:00",
+          "doctor": "李医生",
+          "notes": "洗牙"
         },
         "issues": [],
-        "warnings": [
-          "医生时间存在排班冲突"
-        ],
-        "status": "warning"
-      },
-      {
-        "row": 3,
-        "data": {
-          "patientName": "缺字段患者",
-          "phone": "",
-          "treatmentItem": "fluoride",
-          "appointmentTime": "2026-06-25 16:00:00",
-          "doctor": "李医生",
-          "notes": ""
-        },
-        "issues": [
-          "缺少手机号"
-        ],
         "warnings": [],
-        "status": "error"
-      },
-      {
-        "row": 4,
-        "data": {
-          "patientName": "时间格式错",
-          "phone": "13900000304",
-          "treatmentItem": "general",
-          "appointmentTime": "不是时间",
-          "doctor": "赵医生",
-          "notes": "时间有问题"
-        },
-        "issues": [
-          "预约时间格式不正确"
-        ],
-        "warnings": [],
-        "status": "error"
+        "status": "ok"
       }
     ],
     "summary": {
-      "total": 4,
-      "ok": 1,
-      "warning": 1,
-      "error": 2,
+      "total": 2,
+      "ok": 2,
+      "warning": 0,
+      "error": 0,
       "canImport": 2
     },
     "status": "confirmed",
-    "confirmedAt": "2026-06-20T18:49:31.034Z",
+    "confirmedAt": "2026-06-20T19:23:13.497Z",
     "importResults": [
       {
         "row": 1,
         "status": "success",
-        "appointmentId": "6752fafb-7b95-4695-8693-2f9c9aedbf96",
+        "appointmentId": "3cb01701-6722-4bbb-88e8-53860c3dabb1",
         "data": {
-          "patientName": "导入正常",
-          "phone": "13900000301",
+          "patientName": "同义词已修改",
+          "phone": "13933339999",
           "treatmentItem": "orthodontics",
-          "appointmentTime": "2026-06-24 14:30:00",
+          "appointmentTime": "2026-06-23 11:00:00",
           "doctor": "张医生",
-          "notes": "复诊"
-        }
-      },
-      {
-        "row": 2,
-        "status": "success",
-        "appointmentId": "a759ee58-1052-4441-bdc1-260a12a258d7",
-        "data": {
-          "patientName": "导入重复",
-          "phone": "13900000101",
-          "treatmentItem": "cleaning",
-          "appointmentTime": "2026-06-25 15:00:00",
-          "doctor": "王医生",
-          "notes": "已存在的手机号"
+          "notes": "正畸复诊"
         }
       }
     ],
-    "createdAt": "2026-06-20T18:49:31.030Z"
+    "createdAt": "2026-06-20T19:23:13.495Z",
+    "skipRows": [
+      "dc2d12ea-70f1-44b5-a36f-5cfbf48a990a"
+    ],
+    "editedRows": {
+      "f804842a-6bb7-4b62-8edb-9420820c31bc": {
+        "patientName": "同义词已修改",
+        "phone": "13933339999"
+      }
+    }
   }
 ]

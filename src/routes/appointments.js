@@ -54,7 +54,11 @@ router.post('/preview-import', async (req, res) => {
 
 router.post('/confirm-import/:previewId', async (req, res) => {
   try {
-    const result = appointmentService.confirmBatchImport(req.params.previewId);
+    const { skipRows, editedRows } = req.body || {};
+    const options = {};
+    if (Array.isArray(skipRows)) options.skipRows = skipRows;
+    if (editedRows && typeof editedRows === 'object') options.editedRows = editedRows;
+    const result = appointmentService.confirmBatchImport(req.params.previewId, options);
     if (result.success) {
       res.json(result);
     } else {
@@ -210,7 +214,7 @@ router.post('/:id/contact-result', async (req, res) => {
       return res.status(400).json({ success: false, error: '请提供联系结果' });
     }
     
-    const contactResult = appointmentService.addContactResult(req.params.id, result, operator, note);
+    const contactResult = await appointmentService.addContactResult(req.params.id, result, operator, note);
     if (contactResult.success) {
       res.json(contactResult);
     } else {
@@ -699,11 +703,13 @@ function generateImportPage() {
     .summary-num { font-size: 24px; font-weight: 700; }
     .summary-label { font-size: 13px; margin-top: 3px; }
     .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .preview-table th, .preview-table td { padding: 8px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-    .preview-table th { background: #fafafa; color: #666; font-weight: 500; }
+    .preview-table th, .preview-table td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .preview-table th { background: #fafafa; color: #666; font-weight: 500; font-size: 12px; }
     .row-ok td { background: #fff; }
     .row-warning td { background: #fffbe6; }
     .row-error td { background: #fff1f0; }
+    .row-skipped td { background: #f5f5f5; opacity: 0.6; }
+    .row-skipped td input { background: #eee; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 4px; }
     .badge-warning { background: #ffe58f; color: #874d00; }
     .badge-error { background: #ffa39e; color: #820000; }
@@ -713,6 +719,37 @@ function generateImportPage() {
     .result-card { padding: 20px; text-align: center; }
     .result-icon { font-size: 48px; margin-bottom: 10px; color: #07c160; }
     .result-text { font-size: 18px; color: #333; }
+    .cell-input {
+      width: 100%;
+      padding: 4px 6px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #fff;
+      box-sizing: border-box;
+      min-width: 90px;
+    }
+    .cell-input:focus {
+      outline: none;
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24,144,255,0.15);
+    }
+    .cell-input[readonly] {
+      background: #fafafa;
+      border-color: #f0f0f0;
+      color: #999;
+    }
+    .skip-cell {
+      text-align: center;
+      width: 50px;
+    }
+    .skip-cell input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .th-center { text-align: center; }
   </style>
 </head>
 <body>
@@ -727,8 +764,9 @@ function generateImportPage() {
     <div id="pasteMode">
       <textarea id="pasteText" class="textarea" placeholder="从 Excel/WPS 复制后粘贴到这里，每行一条，按顺序：姓名&#10;手机号&#9;项目&#9;时间&#9;医生&#9;备注"></textarea>
       <div class="hint">
-        列顺序（用 Tab 或逗号分隔）：<br>
-        <code>姓名</code> <code>手机号</code> <code>复诊项目编码</code> <code>预约时间</code> <code>医生</code> <code>备注</code><br>
+        支持两种模式：<br>
+        1) 带表头粘贴：第一行为表头（如 姓名、手机、项目、时间、医生、备注），自动识别列顺序<br>
+        2) 按位置粘贴：列顺序（Tab/逗号/空格分隔）<code>姓名</code> <code>手机号</code> <code>复诊项目编码</code> <code>预约时间</code> <code>医生</code> <code>备注</code><br>
         时间格式支持：<code>2026-06-25 10:00</code>、<code>2026/6/25 10:00</code> 等
       </div>
     </div>
@@ -736,7 +774,13 @@ function generateImportPage() {
     <div id="csvMode" class="hidden">
       <input type="file" id="csvFile" accept=".csv" style="margin-bottom:10px;">
       <div class="hint">
-        CSV 需包含表头，识别的表头关键词：姓名/name、手机/phone、项目/item、时间/time、医生/doctor、备注/note
+        CSV 需包含表头，自动识别以下同义词：<br>
+        姓名：<code>姓名</code> <code>患者</code> <code>患者姓名</code> <code>名字</code> <code>name</code> <code>patient</code><br>
+        手机：<code>手机号</code> <code>电话</code> <code>联系方式</code> <code>联系电话</code> <code>手机</code> <code>phone</code> <code>mobile</code> <code>tel</code><br>
+        项目：<code>项目</code> <code>复诊类型</code> <code>复诊项目</code> <code>治疗类型</code> <code>治疗项目</code> <code>item</code> <code>treatment</code> <code>type</code><br>
+        时间：<code>时间</code> <code>预约日期</code> <code>就诊时间</code> <code>日期</code> <code>date</code> <code>appointment time</code><br>
+        医生：<code>医生</code> <code>预约医生</code> <code>主治医生</code> <code>医师</code> <code>doctor</code> <code>physician</code><br>
+        备注：<code>备注</code> <code>说明</code> <code>注释</code> <code>note</code> <code>remark</code> <code>comment</code>
       </div>
     </div>
     
@@ -764,6 +808,9 @@ function generateImportPage() {
   <script>
     let currentPreviewId = null;
     let currentMode = 'paste';
+    let previewRows = [];
+    let rowSkipMap = {};
+    let rowEditMap = {};
     
     function switchMode(mode) {
       currentMode = mode;
@@ -806,6 +853,9 @@ function generateImportPage() {
         const data = await res.json();
         if (data.success) {
           currentPreviewId = data.previewId;
+          previewRows = data.rows;
+          rowSkipMap = {};
+          rowEditMap = {};
           renderSummary(data.summary);
           renderTable(data.rows);
           document.getElementById('previewSection').classList.remove('hidden');
@@ -826,22 +876,63 @@ function generateImportPage() {
         '<div class="summary-item summary-err"><div class="summary-num">' + s.error + '</div><div class="summary-label">错误行</div></div>';
     }
     
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    
+    function toggleSkip(rowKey, checked) {
+      if (checked) {
+        rowSkipMap[rowKey] = true;
+      } else {
+        delete rowSkipMap[rowKey];
+      }
+      const tr = document.querySelector('tr[data-row-key="' + rowKey + '"]');
+      if (tr) {
+        tr.classList.toggle('row-skipped', checked);
+        const inputs = tr.querySelectorAll('.cell-input');
+        inputs.forEach(i => { i.disabled = checked; });
+      }
+    }
+    
+    function onCellEdit(rowKey, field, value) {
+      if (!rowEditMap[rowKey]) {
+        rowEditMap[rowKey] = {};
+      }
+      rowEditMap[rowKey][field] = value;
+    }
+    
     function renderTable(rows) {
       let html = '<thead><tr>' +
-        '<th>行号</th><th>姓名</th><th>手机号</th><th>项目</th><th>时间</th><th>医生</th><th>备注</th><th>状态</th>' +
+        '<th class="th-center skip-cell">跳过</th><th>行号</th><th>姓名</th><th>手机号</th><th>项目</th><th>时间</th><th>医生</th><th>备注</th><th>状态</th>' +
         '</tr></thead><tbody>';
       
       rows.forEach(r => {
+        const isSkipped = !!rowSkipMap[r.rowKey];
         const tags = r.issues.map(i => '<span class="badge badge-error">' + i + '</span>')
           .concat(r.warnings.map(w => '<span class="badge badge-warning">' + w + '</span>')).join('');
-        html += '<tr class="row-' + r.status + '">' +
+        const trClass = isSkipped ? 'row-skipped' : ('row-' + r.status);
+        const disabledAttr = isSkipped ? ' disabled' : '';
+        
+        const edited = rowEditMap[r.rowKey] || {};
+        const patientName = edited.patientName != null ? edited.patientName : r.data.patientName;
+        const phone = edited.phone != null ? edited.phone : r.data.phone;
+        const treatmentItem = edited.treatmentItem != null ? edited.treatmentItem : r.data.treatmentItem;
+        const appointmentTime = edited.appointmentTime != null ? edited.appointmentTime : r.data.appointmentTime;
+        const doctor = edited.doctor != null ? edited.doctor : r.data.doctor;
+        const notes = edited.notes != null ? edited.notes : (r.data.notes || '');
+        
+        const key = esc(r.rowKey);
+        const sq = "'";
+        
+        html += '<tr class="' + trClass + '" data-row-key="' + key + '">' +
+          '<td class="skip-cell"><input type="checkbox" onchange="toggleSkip(' + sq + key + sq + ', this.checked)"' + (isSkipped ? ' checked' : '') + '></td>' +
           '<td>' + r.row + '</td>' +
-          '<td>' + r.data.patientName + '</td>' +
-          '<td>' + r.data.phone + '</td>' +
-          '<td>' + r.data.treatmentItem + '</td>' +
-          '<td>' + r.data.appointmentTime + '</td>' +
-          '<td>' + r.data.doctor + '</td>' +
-          '<td>' + (r.data.notes || '') + '</td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(patientName) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'patientName' + sq + ',this.value)"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(phone) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'phone' + sq + ',this.value)"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(treatmentItem) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'treatmentItem' + sq + ',this.value)"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(appointmentTime) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'appointmentTime' + sq + ',this.value)"></td>' +
+          '<td><input class="cell-input" type="text" value="' + esc(doctor) + '"' + disabledAttr + ' onchange="onCellEdit(' + sq + key + sq + ',' + sq + 'doctor' + sq + ',this.value)"></td>' +
+          '<td>' + esc(notes) + '</td>' +
           '<td>' + (tags || '<span style="color:#389e0d;">正常</span>') + '</td>' +
         '</tr>';
       });
@@ -854,9 +945,19 @@ function generateImportPage() {
       if (!currentPreviewId) return;
       document.getElementById('confirmBtn').disabled = true;
       
+      const skipRows = Object.keys(rowSkipMap);
+      const editedRows = {};
+      for (const k in rowEditMap) {
+        if (Object.keys(rowEditMap[k]).length > 0) {
+          editedRows[k] = rowEditMap[k];
+        }
+      }
+      
       try {
         const res = await fetch('/api/appointments/confirm-import/' + currentPreviewId, {
-          method: 'POST'
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skipRows, editedRows })
         });
         const data = await res.json();
         if (data.success) {
