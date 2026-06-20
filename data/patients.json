@@ -1,0 +1,47 @@
+[
+  {
+    "id": "fedc1115-cfb2-4d8a-814f-9f261bcce481",
+    "name": "张三",
+    "phone": "13800138001",
+    "openid": "oABCD1234567890_sample1",
+    "createdAt": "2026-06-20T17:50:21.527Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "85290d1e-df54-43bd-97fe-fa3880f0c617",
+    "name": "小明",
+    "phone": "13800138002",
+    "openid": "oABCD1234567890_sample2",
+    "createdAt": "2026-06-20T17:50:21.529Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "cdb09a22-020f-4eac-b100-f8724979a668",
+    "name": "李四",
+    "phone": "13800138003",
+    "openid": "oABCD1234567890_sample3",
+    "createdAt": "2026-06-20T17:50:21.530Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "885ec5aa-ffb2-415b-90ba-8183ab0d56cb",
+    "name": "王五",
+    "phone": "13800138004",
+    "openid": "oABCD1234567890_sample4",
+    "createdAt": "2026-06-20T17:50:21.531Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "11fb15da-c27b-4d6f-ad15-b33acae24352",
+    "name": "赵六",
+    "phone": "13800138005",
+    "openid": "oABCD1234567890_sample5",
+    "createdAt": "2026-06-20T17:50:21.533Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  }
+]

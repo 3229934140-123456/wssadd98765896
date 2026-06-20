@@ -1,0 +1,53 @@
+[
+  {
+    "id": "7990f39c-e0f6-4427-a44a-027170cd1836",
+    "type": "appointment_confirmed",
+    "appointmentId": "c9a14269-8e18-49f3-8a19-c2e7130dde67",
+    "content": "预约已确认：赵六",
+    "details": {
+      "id": "c9a14269-8e18-49f3-8a19-c2e7130dde67",
+      "patientName": "赵六",
+      "phone": "13800138005",
+      "openid": "oABCD1234567890_sample5",
+      "treatmentItem": "root_canal",
+      "appointmentTime": "2026-06-21 13:50:21",
+      "doctor": "李医生",
+      "status": "confirmed",
+      "reminderSent": false,
+      "confirmedAt": "2026-06-20T17:51:17.923Z",
+      "rescheduledFrom": null,
+      "rescheduledCount": 0,
+      "noShowRecallSent": false,
+      "createdAt": "2026-06-20T17:50:21.532Z",
+      "updatedAt": "2026-06-20T17:51:17.923Z",
+      "notes": "根管治疗复诊"
+    },
+    "createdAt": "2026-06-20T17:51:18.093Z"
+  },
+  {
+    "id": "981eb16e-3b89-4b9b-a2b7-0a87ba547125",
+    "type": "appointment_rescheduled",
+    "appointmentId": "7cebc394-108b-477a-bb23-ac856205ed04",
+    "content": "改约：张三 - 从2026-06-21 21:50:21改到2026-06-23 21:50:21",
+    "details": {
+      "id": "7cebc394-108b-477a-bb23-ac856205ed04",
+      "patientName": "张三",
+      "phone": "13800138001",
+      "openid": "oABCD1234567890_sample1",
+      "treatmentItem": "orthodontics",
+      "appointmentTime": "2026-06-23 21:50:21",
+      "doctor": "李医生",
+      "status": "pending",
+      "reminderSent": false,
+      "confirmedAt": null,
+      "rescheduledFrom": "2026-06-21 21:50:21",
+      "rescheduledCount": 1,
+      "noShowRecallSent": false,
+      "createdAt": "2026-06-20T17:50:21.526Z",
+      "updatedAt": "2026-06-20T17:51:50.601Z",
+      "notes": "正畸调整复诊",
+      "rescheduleReason": "临时有事改约"
+    },
+    "createdAt": "2026-06-20T17:51:50.715Z"
+  }
+]

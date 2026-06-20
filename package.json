@@ -1,0 +1,21 @@
+{
+  "name": "dental-clinic-reminder-service",
+  "version": "1.0.0",
+  "description": "口腔诊所微信公众号自动化提醒后端服务 - 复诊预约、确认、改约、爽约召回",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "keywords": ["dental", "wechat", "reminder", "clinic"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.2",
+    "dayjs": "^1.11.10",
+    "uuid": "^9.0.1",
+    "dotenv": "^16.3.1"
+  }
+}
