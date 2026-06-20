@@ -4,7 +4,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   const docs = {
     title: '口腔诊所微信公众号自动化提醒服务 API 文档',
-    version: '1.0.0',
+    version: '2.0.0',
     baseUrl: 'http://localhost:3000/api',
     categories: {
       appointments: {
@@ -79,6 +79,53 @@ router.get('/', (req, res) => {
             method: 'POST',
             path: '/appointments/:id/noshow',
             description: '标记爽约'
+          },
+          {
+            method: 'POST',
+            path: '/appointments/:id/contact-result',
+            description: '记录前台联系结果',
+            body: {
+              result: '联系结果: reached_confirmed/reached_rescheduled/reached_cancelled/no_answer/busy/wrong_number/left_message/other (必填)',
+              operator: '操作人 (必填)',
+              note: '备注 (可选)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/appointments/:id/progress',
+            description: '患者端处理进度 H5 页面'
+          },
+          {
+            method: 'GET',
+            path: '/appointments/conflict-check',
+            description: '排班冲突检测',
+            query: {
+              doctor: '医生姓名 (必填)',
+              appointmentTime: '预约时间 ISO格式 (必填)',
+              durationMinutes: '时长分钟 (可选，默认30)',
+              chair: '椅位 (可选)',
+              excludeAppointmentId: '排除的预约ID (可选)'
+            }
+          },
+          {
+            method: 'POST',
+            path: '/appointments/preview-import',
+            description: '批量导入预览（粘贴/CSV/JSON数组）',
+            body: {
+              pastedText: '从表格复制的Tab/逗号分隔文本 (与appointments二选一)',
+              csvText: 'CSV 文本内容 (与appointments二选一)',
+              appointments: '预约对象数组 (与pastedText/csvText二选一)'
+            }
+          },
+          {
+            method: 'POST',
+            path: '/appointments/confirm-import/:previewId',
+            description: '确认批量导入（预览通过后）'
+          },
+          {
+            method: 'GET',
+            path: '/appointments/import-page',
+            description: '批量导入 H5 页面（粘贴/CSV双模式）'
           }
         ]
       },
@@ -103,7 +150,7 @@ router.get('/', (req, res) => {
           {
             method: 'GET',
             path: '/patients/:phone',
-            description: '获取患者信息及历史预约'
+            description: '获取患者信息、历史预约及进度列表'
           },
           {
             method: 'POST',
@@ -113,12 +160,37 @@ router.get('/', (req, res) => {
               phone: '手机号',
               openid: '微信openid'
             }
+          },
+          {
+            method: 'GET',
+            path: '/patients/progress',
+            description: '患者端处理进度 H5 页面（通用入口）',
+            query: {
+              sourceType: '来源类型: appointment/reschedule/reappointment (必填)',
+              sourceId: '来源ID (必填)',
+              phone: '手机号 (可选，用于校验)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/patients/progress/json',
+            description: '患者端处理进度 JSON 数据'
           }
         ]
       },
       admin: {
         name: '管理后台',
         endpoints: [
+          {
+            method: 'GET',
+            path: '/admin/workbench',
+            description: '前台工作台三栏数据（未确认/改约/召回，含排名原因建议时间+排班冲突）'
+          },
+          {
+            method: 'GET',
+            path: '/admin/workbench/page',
+            description: '前台任务中心 H5 页面'
+          },
           {
             method: 'GET',
             path: '/admin/daily-summary',
@@ -153,7 +225,51 @@ router.get('/', (req, res) => {
             method: 'POST',
             path: '/admin/trigger-recall',
             description: '手动触发爽约召回'
+          },
+          {
+            method: 'GET',
+            path: '/admin/reappointment-requests',
+            description: '重新预约（召回）申请列表，含排班冲突信息',
+            query: {
+              status: '筛选状态: pending/approved/rejected (可选)'
+            }
+          },
+          {
+            method: 'POST',
+            path: '/admin/reappointment-requests/:id/approve',
+            description: '批准重新预约申请，将创建新预约（自动检测冲突，可overrideTime强制指定）',
+            body: {
+              operator: '操作人 (必填)',
+              overrideTime: '强制指定时间，覆盖冲突检测 (可选)'
+            }
+          },
+          {
+            method: 'POST',
+            path: '/admin/reappointment-requests/:id/reject',
+            description: '拒绝重新预约申请',
+            body: {
+              operator: '操作人 (必填)',
+              reason: '拒绝原因 (可选)'
+            }
           }
+        ]
+      },
+      progressFlow: {
+        name: '患者进度状态说明',
+        stages: [
+          { code: 'submitted', label: '已提交', desc: '您的操作已成功提交，等待前台处理' },
+          { code: 'contacted', label: '前台已联系', desc: '前台已查看您的申请并正在处理' },
+          { code: 'confirmed', label: '已确认新时间', desc: '新的预约时间已确认，请注意就诊提醒' },
+          { code: 'cancelled', label: '已取消', desc: '该预约已取消' },
+          { code: 'rejected', label: '申请未通过', desc: '申请未通过，请来电或重新提交时间' }
+        ]
+      },
+      importValidation: {
+        name: '批量导入校验规则',
+        validationTypes: [
+          { code: 'ok', label: '正常', color: '绿色', desc: '数据无误，可入库' },
+          { code: 'warning', label: '警告', color: '黄色', desc: '可能重复或信息不全，建议确认后入库' },
+          { code: 'error', label: '错误', color: '红色', desc: '必填字段缺失或时间格式错误，无法入库' }
         ]
       }
     },

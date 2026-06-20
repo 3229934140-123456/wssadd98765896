@@ -1,0 +1,107 @@
+[
+  {
+    "id": "a038ec37-e132-4721-9951-94c28891604d",
+    "rows": [
+      {
+        "row": 1,
+        "data": {
+          "patientName": "导入正常",
+          "phone": "13900000301",
+          "treatmentItem": "orthodontics",
+          "appointmentTime": "2026-06-24 14:30:00",
+          "doctor": "张医生",
+          "notes": "复诊"
+        },
+        "issues": [],
+        "warnings": [],
+        "status": "ok"
+      },
+      {
+        "row": 2,
+        "data": {
+          "patientName": "导入重复",
+          "phone": "13900000101",
+          "treatmentItem": "cleaning",
+          "appointmentTime": "2026-06-25 15:00:00",
+          "doctor": "王医生",
+          "notes": "已存在的手机号"
+        },
+        "issues": [],
+        "warnings": [
+          "医生时间存在排班冲突"
+        ],
+        "status": "warning"
+      },
+      {
+        "row": 3,
+        "data": {
+          "patientName": "缺字段患者",
+          "phone": "",
+          "treatmentItem": "fluoride",
+          "appointmentTime": "2026-06-25 16:00:00",
+          "doctor": "李医生",
+          "notes": ""
+        },
+        "issues": [
+          "缺少手机号"
+        ],
+        "warnings": [],
+        "status": "error"
+      },
+      {
+        "row": 4,
+        "data": {
+          "patientName": "时间格式错",
+          "phone": "13900000304",
+          "treatmentItem": "general",
+          "appointmentTime": "不是时间",
+          "doctor": "赵医生",
+          "notes": "时间有问题"
+        },
+        "issues": [
+          "预约时间格式不正确"
+        ],
+        "warnings": [],
+        "status": "error"
+      }
+    ],
+    "summary": {
+      "total": 4,
+      "ok": 1,
+      "warning": 1,
+      "error": 2,
+      "canImport": 2
+    },
+    "status": "confirmed",
+    "confirmedAt": "2026-06-20T18:49:31.034Z",
+    "importResults": [
+      {
+        "row": 1,
+        "status": "success",
+        "appointmentId": "6752fafb-7b95-4695-8693-2f9c9aedbf96",
+        "data": {
+          "patientName": "导入正常",
+          "phone": "13900000301",
+          "treatmentItem": "orthodontics",
+          "appointmentTime": "2026-06-24 14:30:00",
+          "doctor": "张医生",
+          "notes": "复诊"
+        }
+      },
+      {
+        "row": 2,
+        "status": "success",
+        "appointmentId": "a759ee58-1052-4441-bdc1-260a12a258d7",
+        "data": {
+          "patientName": "导入重复",
+          "phone": "13900000101",
+          "treatmentItem": "cleaning",
+          "appointmentTime": "2026-06-25 15:00:00",
+          "doctor": "王医生",
+          "notes": "已存在的手机号"
+        }
+      }
+    ],
+    "createdAt": "2026-06-20T18:49:31.030Z"
+  }
+]

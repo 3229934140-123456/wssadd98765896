@@ -1,18 +1,10 @@
 [
   {
-    "id": "6f6a99d4-0c3e-4127-856c-37feeee4824d",
-    "appointmentId": "1685dae7-66df-48ea-b297-fb6bb0505b25",
-    "result": "reached_confirmed",
-    "operator": "前台小李",
-    "note": "患者电话确认可按时就诊",
-    "createdAt": "2026-06-20T18:03:11.842Z"
-  },
-  {
-    "id": "3f8c1c45-47ca-463a-9824-1bb1c6031038",
-    "appointmentId": "8fd4d636-ccad-42ce-8fdb-f4907274561e",
-    "result": "no_answer",
-    "operator": "前台",
-    "note": "第一次拨打无人接听",
-    "createdAt": "2026-06-20T18:03:11.865Z"
+    "id": "8af7a0d8-df79-42ce-925b-03947087802a",
+    "appointmentId": "37df6867-7c33-4a3a-8c4e-bda3d68c6880",
+    "result": "reached_rescheduled",
+    "operator": "前台小美",
+    "note": "已联系确认改约",
+    "createdAt": "2026-06-20T18:49:31.016Z"
   }
 ]

@@ -18,13 +18,19 @@ module.exports = {
   clinic: {
     name: process.env.CLINIC_NAME || '口腔诊所',
     address: process.env.CLINIC_ADDRESS || '诊所地址',
-    phone: process.env.CLINIC_PHONE || '010-12345678'
+    phone: process.env.CLINIC_PHONE || '010-12345678',
+    workingHours: {
+      start: process.env.WORKING_START || '09:00',
+      end: process.env.WORKING_END || '18:00'
+    },
+    chairs: (process.env.CHAIRS || 'A1,A2,B1,B2').split(',')
   },
   
   reminder: {
     hoursBefore: parseInt(process.env.REMINDER_HOURS_BEFORE) || 24,
     confirmTimeoutHours: parseInt(process.env.CONFIRM_TIMEOUT_HOURS) || 12,
-    noShowRecallHours: parseInt(process.env.NO_SHOW_RECALL_HOURS) || 24
+    noShowRecallHours: parseInt(process.env.NO_SHOW_RECALL_HOURS) || 24,
+    defaultAppointmentMinutes: parseInt(process.env.APPOINTMENT_MINUTES) || 30
   },
   
   data: {

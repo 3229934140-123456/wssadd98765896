@@ -11,6 +11,8 @@ class DataStore {
     this.recordsFile = path.join(this.dataDir, 'records.json');
     this.contactResultsFile = path.join(this.dataDir, 'contact_results.json');
     this.reappointmentRequestsFile = path.join(this.dataDir, 'reappointment_requests.json');
+    this.patientProgressFile = path.join(this.dataDir, 'patient_progress.json');
+    this.importPreviewsFile = path.join(this.dataDir, 'import_previews.json');
     
     this._ensureDataDir();
     this._initFiles();
@@ -28,7 +30,9 @@ class DataStore {
       this.patientsFile,
       this.recordsFile,
       this.contactResultsFile,
-      this.reappointmentRequestsFile
+      this.reappointmentRequestsFile,
+      this.patientProgressFile,
+      this.importPreviewsFile
     ];
     files.forEach(f => {
       if (!fs.existsSync(f)) {
@@ -67,6 +71,7 @@ class DataStore {
       treatmentItem: appointmentData.treatmentItem,
       appointmentTime: appointmentData.appointmentTime,
       doctor: appointmentData.doctor,
+      chair: appointmentData.chair || null,
       status: 'pending',
       reminderSent: false,
       reminderSentAt: null,
@@ -111,6 +116,14 @@ class DataStore {
   
   getAllAppointments() {
     return this._readFile(this.appointmentsFile);
+  }
+  
+  getActiveAppointments(excludeId = null) {
+    const appointments = this._readFile(this.appointmentsFile);
+    return appointments.filter(a =>
+      (a.status === 'pending' || a.status === 'confirmed') &&
+      a.id !== excludeId
+    );
   }
   
   updateAppointment(id, updates) {
@@ -293,6 +306,101 @@ class DataStore {
     return requests[index];
   }
   
+  savePatientProgress(progressData) {
+    const progresses = this._readFile(this.patientProgressFile);
+    const existing = progresses.find(p =>
+      p.sourceType === progressData.sourceType &&
+      p.sourceId === progressData.sourceId
+    );
+    
+    if (existing) {
+      const index = progresses.indexOf(existing);
+      progresses[index] = {
+        ...existing,
+        ...progressData,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      progresses.push({
+        id: uuidv4(),
+        ...progressData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    
+    this._writeFile(this.patientProgressFile, progresses);
+    return progresses.find(p =>
+      p.sourceType === progressData.sourceType &&
+      p.sourceId === progressData.sourceId
+    );
+  }
+  
+  getPatientProgress(sourceType, sourceId) {
+    const progresses = this._readFile(this.patientProgressFile);
+    return progresses.find(p => p.sourceType === sourceType && p.sourceId === sourceId) || null;
+  }
+  
+  getPatientProgressByPhone(phone) {
+    const progresses = this._readFile(this.patientProgressFile);
+    return progresses
+      .filter(p => p.phone === phone)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  }
+  
+  updatePatientProgress(id, updates) {
+    const progresses = this._readFile(this.patientProgressFile);
+    const index = progresses.findIndex(p => p.id === id);
+    
+    if (index === -1) return null;
+    
+    progresses[index] = {
+      ...progresses[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    this._writeFile(this.patientProgressFile, progresses);
+    return progresses[index];
+  }
+  
+  saveImportPreview(data) {
+    const previews = this._readFile(this.importPreviewsFile);
+    const preview = {
+      id: uuidv4(),
+      rows: data.rows || [],
+      summary: data.summary || {},
+      status: 'pending',
+      confirmedAt: null,
+      importResults: null,
+      createdAt: new Date().toISOString()
+    };
+    
+    previews.push(preview);
+    this._writeFile(this.importPreviewsFile, previews);
+    return preview;
+  }
+  
+  getImportPreview(id) {
+    const previews = this._readFile(this.importPreviewsFile);
+    return previews.find(p => p.id === id) || null;
+  }
+  
+  updateImportPreview(id, updates) {
+    const previews = this._readFile(this.importPreviewsFile);
+    const index = previews.findIndex(p => p.id === id);
+    
+    if (index === -1) return null;
+    
+    previews[index] = {
+      ...previews[index],
+      ...updates
+    };
+    
+    this._writeFile(this.importPreviewsFile, previews);
+    return previews[index];
+  }
+  
   batchCreateAppointments(appointmentsData) {
     const results = [];
     const appointments = this._readFile(this.appointmentsFile);
@@ -338,6 +446,7 @@ class DataStore {
         treatmentItem: row.treatmentItem,
         appointmentTime: row.appointmentTime,
         doctor: row.doctor,
+        chair: row.chair || null,
         status: 'pending',
         reminderSent: false,
         reminderSentAt: null,

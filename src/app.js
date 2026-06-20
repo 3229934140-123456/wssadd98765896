@@ -21,14 +21,17 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     service: '口腔诊所微信公众号自动化提醒服务',
-    version: '1.0.0',
+    version: '2.0.0',
     status: 'running',
     endpoints: {
       appointments: '/api/appointments',
       admin: '/api/admin',
       patients: '/api/patients',
       docs: '/api/docs',
-      workbench: '/api/admin/workbench/page'
+      workbench: '/api/admin/workbench/page',
+      batchImport: '/api/appointments/import-page',
+      patientProgress: '/api/patients/progress',
+      conflictCheck: '/api/appointments/conflict-check'
     }
   });
 });
@@ -55,27 +58,34 @@ app.use((req, res) => {
 
 const PORT = config.port;
 app.listen(PORT, () => {
-  console.log('\n' + '='.repeat(60));
-  console.log('  口腔诊所微信公众号自动化提醒服务');
+  console.log('\n' + '='.repeat(65));
+  console.log('  口腔诊所微信公众号自动化提醒服务  v2.0');
   console.log('  Dental Clinic WeChat Reminder Service');
-  console.log('='.repeat(60));
-  console.log(`\n  服务地址: http://localhost:${PORT}`);
-  console.log(`  诊所名称: ${config.clinic.name}`);
-  console.log(`  数据目录: ${config.data.dir}`);
-  console.log('\n' + '-'.repeat(60));
+  console.log('='.repeat(65));
+  console.log(`\n  服务地址:   http://localhost:${PORT}`);
+  console.log(`  诊所名称:   ${config.clinic.name}`);
+  console.log(`  诊所电话:   ${config.clinic.phone}`);
+  console.log(`  营业时间:   ${config.clinic.workingHours.start} - ${config.clinic.workingHours.end}`);
+  console.log(`  椅位数量:   ${config.clinic.chairs.length} 台 (${config.clinic.chairs.join('、')})`);
+  console.log(`  数据目录:   ${config.data.dir}`);
+  console.log('\n' + '-'.repeat(65));
   console.log('  核心功能:');
   console.log('  ✓ 复诊预约管理（录入/查询/改约/确认/取消）');
-  console.log('  ✓ 微信公众号模板消息推送');
-  console.log('  ✓ 项目化注意事项提醒');
-  console.log('  ✓ 超时未确认前台推送');
-  console.log('  ✓ 智能拨打优先级排序');
-  console.log('  ✓ 爽约患者温和召回');
-  console.log('  ✓ 前台工作台（未确认/改约/召回三栏）');
-  console.log('  ✓ 联系结果标记');
-  console.log('  ✓ 爽约召回 → 重新预约申请闭环');
-  console.log('  ✓ 批量导入预约');
-  console.log('-'.repeat(60));
-  console.log(`\n  前台工作台: http://localhost:${PORT}/api/admin/workbench/page`);
+  console.log('  ✓ 微信公众号模板消息推送（10种项目化注意事项）');
+  console.log('  ✓ 超时未确认前台推送 + 智能拨打优先级排序');
+  console.log('  ✓ 爽约患者温和召回 → 重新预约申请闭环');
+  console.log('  ✓ 🆕 前台今日任务中心（排名/原因/建议时间直显）');
+  console.log('  ✓ 🆕 医生+椅位排班冲突检测 + 推荐可选时间');
+  console.log('  ✓ 🆕 患者端处理进度页（提交→联系→确认三态）');
+  console.log('  ✓ 🆕 批量导入（粘贴表格/CSV + 预览查重/校验）');
+  console.log('  ✓ 联系结果标记与历史记录');
+  console.log('-'.repeat(65));
+  console.log(`\n  常用入口:`);
+  console.log(`  前台任务中心:     http://localhost:${PORT}/api/admin/workbench/page`);
+  console.log(`  批量导入页:       http://localhost:${PORT}/api/appointments/import-page`);
+  console.log(`  患者进度查询:     http://localhost:${PORT}/api/patients/progress`);
+  console.log(`  排班冲突检测:     http://localhost:${PORT}/api/appointments/conflict-check`);
+  console.log(`  API 文档:         http://localhost:${PORT}/api/docs`);
   
   schedulerService.start();
   

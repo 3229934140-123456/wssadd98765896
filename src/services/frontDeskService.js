@@ -11,7 +11,9 @@ class FrontDeskService {
         ...appt,
         callPriority: score.priority,
         callReason: score.reason,
-        suggestedCallTime: score.suggestedTime
+        callReasonDetail: score.reasons,
+        suggestedCallTime: score.suggestedTime,
+        treatmentItemName: getItemName(appt.treatmentItem)
       };
     });
     
@@ -21,16 +23,30 @@ class FrontDeskService {
       totalCount: scored.length,
       callList: scored.map((appt, index) => ({
         rank: index + 1,
+        id: appt.id,
         patientName: appt.patientName,
         phone: appt.phone,
-        treatmentItem: getItemName(appt.treatmentItem),
+        treatmentItem: appt.treatmentItemName,
+        treatmentItemCode: appt.treatmentItem,
         appointmentTime: appt.appointmentTime,
         doctor: appt.doctor,
+        chair: appt.chair,
         callPriority: appt.callPriority,
         callReason: appt.callReason,
-        suggestedCallTime: appt.suggestedCallTime
+        callReasonDetail: appt.callReasonDetail,
+        suggestedCallTime: appt.suggestedCallTime,
+        waitingHours: appt.waitingHours || 0,
+        reminderSentAt: appt.reminderSentAt,
+        rescheduledCount: appt.rescheduledCount || 0,
+        contactResult: appt.contactResult,
+        notes: appt.notes
       }))
     };
+  }
+  
+  enrichWorkbenchItems(appointments) {
+    const callList = this.generateCallList(appointments);
+    return callList.callList;
   }
   
   _calculateCallPriority(appointment) {
@@ -39,7 +55,8 @@ class FrontDeskService {
     
     const itemPriority = getPriority(appointment.treatmentItem);
     priority += (4 - itemPriority) * 20;
-    reasons.push(this._getPriorityReason(itemPriority));
+    const itemReason = this._getPriorityReason(itemPriority);
+    if (itemReason) reasons.push(itemReason);
     
     const patient = dataStore.getPatientByPhone(appointment.phone);
     if (patient) {
@@ -94,6 +111,7 @@ class FrontDeskService {
     
     return {
       priority: Math.min(priority, 100),
+      reasons: reasons,
       reason: reasons.slice(0, 2).join('；'),
       suggestedTime: suggestedTime
     };

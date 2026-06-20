@@ -1,0 +1,62 @@
+[
+  {
+    "id": "c8128f93-619e-4a5e-953b-88fe8fb9dcbf",
+    "sourceType": "appointment",
+    "sourceId": "37df6867-7c33-4a3a-8c4e-bda3d68c6880",
+    "phone": "13900000201",
+    "submittedAt": "2026-06-20T18:49:31.013Z",
+    "stage": "confirmed",
+    "patientName": "进度测试患者",
+    "treatmentItemName": "根管治疗复诊",
+    "doctor": "赵医生",
+    "appointmentTime": "2026-06-27T07:00:31.012Z",
+    "chair": null,
+    "message": "新时间已确认",
+    "newTime": "2026-06-27T07:00:31.012Z",
+    "reason": "临时有事需要改到下午",
+    "history": [
+      {
+        "stage": "submitted",
+        "message": "改约申请已提交，等待前台确认",
+        "at": "2026-06-20T18:49:31.013Z"
+      },
+      {
+        "stage": "contacted",
+        "message": "前台已联系（需改约）",
+        "at": "2026-06-20T18:49:31.016Z"
+      },
+      {
+        "stage": "confirmed",
+        "message": "新时间已确认",
+        "at": "2026-06-20T18:49:31.018Z"
+      }
+    ],
+    "createdAt": "2026-06-20T18:49:31.013Z",
+    "updatedAt": "2026-06-20T18:49:31.018Z",
+    "note": "已联系确认改约",
+    "appointmentId": "37df6867-7c33-4a3a-8c4e-bda3d68c6880"
+  },
+  {
+    "id": "23844a02-6d03-4f40-88b0-b8be71645dbc",
+    "sourceType": "reappointment",
+    "sourceId": "4c74d3fa-4699-44b3-9458-6de5f2fe2772",
+    "phone": "13900000202",
+    "submittedAt": "2026-06-20T18:49:31.023Z",
+    "stage": "submitted",
+    "patientName": "召回进度测试",
+    "treatmentItemName": "补牙复诊",
+    "doctor": "张医生",
+    "proposedTime": "2026-06-26T03:00:31.022Z",
+    "message": "重新预约申请已提交，等待前台确认",
+    "remark": "想补个牙",
+    "history": [
+      {
+        "stage": "submitted",
+        "message": "重新预约申请已提交，等待前台确认",
+        "at": "2026-06-20T18:49:31.023Z"
+      }
+    ],
+    "createdAt": "2026-06-20T18:49:31.023Z",
+    "updatedAt": "2026-06-20T18:49:31.023Z"
+  }
+]

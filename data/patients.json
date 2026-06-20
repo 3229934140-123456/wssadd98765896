@@ -1,73 +1,73 @@
 [
   {
-    "id": "aebfadff-fcfd-48d7-b9b2-0a1b14f5bd87",
-    "name": "张三",
-    "phone": "13800138001",
-    "openid": "oABCD1234567890_sample1",
-    "createdAt": "2026-06-20T18:02:15.460Z",
+    "id": "d8662422-e9f2-4db4-8852-013292fcc0d0",
+    "name": "冲突测试A",
+    "phone": "13900000001",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:30.986Z",
     "totalAppointments": 1,
     "noShowCount": 0
   },
   {
-    "id": "7d4d6723-dbc4-458f-8065-d6fa6d883da6",
-    "name": "小明",
-    "phone": "13800138002",
-    "openid": "oABCD1234567890_sample2",
-    "createdAt": "2026-06-20T18:02:15.461Z",
+    "id": "2b7f21fc-8195-4339-a9c9-49918ddfeaa8",
+    "name": "冲突测试B",
+    "phone": "13900000002",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:30.998Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "009d9a05-b11f-4f6e-b995-f260f24991f9",
+    "name": "导入重复已存在",
+    "phone": "13900000101",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:31.000Z",
     "totalAppointments": 3,
+    "noShowCount": 2
+  },
+  {
+    "id": "648674bc-ec4d-4f7f-b8cd-d0499d618ccf",
+    "name": "常规洁牙患者",
+    "phone": "13900000102",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:31.002Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "7ea1ac0e-138e-46c7-8fde-2ce85cae0a4f",
+    "name": "正畸老患者",
+    "phone": "13900000103",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:31.004Z",
+    "totalAppointments": 8,
+    "noShowCount": 0
+  },
+  {
+    "id": "7516f6d3-b6bd-4330-9227-8a5da46c2072",
+    "name": "进度测试患者",
+    "phone": "13900000201",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:31.011Z",
+    "totalAppointments": 1,
+    "noShowCount": 0
+  },
+  {
+    "id": "2848b02d-231a-4f4a-a1f4-f2f889ab30b2",
+    "name": "召回进度测试",
+    "phone": "13900000202",
+    "openid": null,
+    "createdAt": "2026-06-20T18:49:31.020Z",
+    "totalAppointments": 2,
     "noShowCount": 1
   },
   {
-    "id": "5e318ca9-231d-47fc-9f03-1e66d198cecb",
-    "name": "李四",
-    "phone": "13800138003",
-    "openid": "oABCD1234567890_sample3",
-    "createdAt": "2026-06-20T18:02:15.462Z",
-    "totalAppointments": 1,
-    "noShowCount": 0
-  },
-  {
-    "id": "9a160af8-ccd0-474d-9b3a-b3320c47a690",
-    "name": "王五",
-    "phone": "13800138004",
-    "openid": "oABCD1234567890_sample4",
-    "createdAt": "2026-06-20T18:02:15.463Z",
-    "totalAppointments": 1,
-    "noShowCount": 0
-  },
-  {
-    "id": "0edda834-c9c5-41ac-91fb-8f73108d28fc",
-    "name": "赵六",
-    "phone": "13800138005",
-    "openid": "oABCD1234567890_sample5",
-    "createdAt": "2026-06-20T18:02:15.464Z",
-    "totalAppointments": 1,
-    "noShowCount": 0
-  },
-  {
-    "id": "7db676cd-237a-4a2c-84b4-f5a4ad7cb96c",
-    "name": "批量1",
-    "phone": "13900001001",
+    "id": "6e12f5db-ffbb-43f8-8377-cdab8b6fe827",
+    "name": "导入正常",
+    "phone": "13900000301",
     "openid": null,
-    "createdAt": "2026-06-20T18:03:11.870Z",
-    "totalAppointments": 1,
-    "noShowCount": 0
-  },
-  {
-    "id": "e0e5e523-34fc-4100-be27-3ae702721595",
-    "name": "批量2",
-    "phone": "13900001002",
-    "openid": null,
-    "createdAt": "2026-06-20T18:03:11.870Z",
-    "totalAppointments": 1,
-    "noShowCount": 0
-  },
-  {
-    "id": "44d41c85-d3b7-4ed2-a39c-b980527c603e",
-    "name": "批量3",
-    "phone": "13900001003",
-    "openid": null,
-    "createdAt": "2026-06-20T18:03:11.871Z",
+    "createdAt": "2026-06-20T18:49:31.033Z",
     "totalAppointments": 1,
     "noShowCount": 0
   }

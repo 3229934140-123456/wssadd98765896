@@ -1,18 +1,18 @@
 [
   {
-    "id": "709a5ad3-ec3c-4c76-8729-0248c48eb8dc",
-    "sourceAppointmentId": "4f061146-8b48-4ca3-8f62-2d307d667a36",
-    "patientName": "小明",
-    "phone": "13800138002",
-    "openid": "oABCD1234567890_sample2",
-    "treatmentItem": "fluoride",
-    "doctor": "王医生",
-    "proposedTime": "2026-06-24 02:03:11",
-    "remark": "可来时段：周三下午、周四上午",
-    "status": "approved",
-    "processedBy": "前台小张",
-    "processedAt": "2026-06-20T18:03:11.859Z",
-    "newAppointmentId": "e299d1ed-47bd-40eb-adc0-6354cf076076",
-    "createdAt": "2026-06-20T18:03:11.855Z"
+    "id": "4c74d3fa-4699-44b3-9458-6de5f2fe2772",
+    "sourceAppointmentId": "c8947f91-9877-4a8f-983a-1086fe42c4fe",
+    "patientName": "召回进度测试",
+    "phone": "13900000202",
+    "openid": null,
+    "treatmentItem": "filling",
+    "doctor": "张医生",
+    "proposedTime": "2026-06-26T03:00:31.022Z",
+    "remark": "想补个牙",
+    "status": "pending",
+    "processedBy": null,
+    "processedAt": null,
+    "newAppointmentId": null,
+    "createdAt": "2026-06-20T18:49:31.023Z"
   }
 ]
